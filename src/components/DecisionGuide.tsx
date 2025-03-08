@@ -1,4 +1,4 @@
-import React, { useState, useCallback, memo, useMemo } from 'react';
+import React, { useState, useCallback, memo, useMemo, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import {
   BarChart,
@@ -15,7 +15,22 @@ import {
   PolarRadiusAxis,
   Radar
 } from 'recharts';
+import ContinueDialog from './ui/ContinueDialog';
+import styles from './DecisionGuide.module.css';
 
+// Componente para anuncios de accesibilidad
+const LiveRegion = memo(({ message }: { message: string }) => (
+  <div 
+    className="sr-only" 
+    role="status" 
+    aria-live="polite" 
+    aria-atomic="true"
+  >
+    {message}
+  </div>
+));
+
+// Resto de interfaces
 interface Pregunta {
   id: number;
   texto: string;
@@ -239,21 +254,33 @@ const DecisionGuide: React.FC = () => {
     panelesSolares: 0,
     generadorGas: 0
   });
-
-  // Manejar selección de respuesta
-  const handleSeleccion = useCallback((pasoActual: number, opcionIndex: number) => {
-    setRespuestas(prev => {
-      const newRespuestas = [...prev];
-      newRespuestas[pasoActual] = opcionIndex;
-      return newRespuestas;
-    });
-    
-    // Mostrar diálogo de confirmación
-    if (window.confirm("¿Desea continuar con la iteración?")) {
-      setPaso(prev => prev + 1);
-      actualizarPuntajes(pasoActual, opcionIndex);
+  const [showDialog, setShowDialog] = useState(false);
+  const [pendingSelection, setPendingSelection] = useState<{ paso: number; opcion: number } | null>(null);
+  // Estado para anuncios de accesibilidad
+  const [announcement, setAnnouncement] = useState('');
+  
+  // Referencias para manejo de foco
+  const lastFocusedElement = useRef<HTMLElement | null>(null);
+  const resultadosRef = useRef<HTMLDivElement>(null);
+  const iniciarButtonRef = useRef<HTMLButtonElement>(null);
+  const opcionesRef = useRef<(HTMLInputElement | null)[]>([]);
+  
+  // Efecto para manejar el foco cuando cambia el paso
+  useEffect(() => {
+    if (paso === 0 && iniciarButtonRef.current) {
+      iniciarButtonRef.current.focus();
+    } else if (paso > preguntas.length && resultadosRef.current) {
+      resultadosRef.current.focus();
+      setAnnouncement('Mostrando resultados del asistente con tu recomendación personalizada');
+    } else if (paso > 0 && paso <= preguntas.length) {
+      setAnnouncement(`Pregunta ${paso} de ${preguntas.length}: ${preguntas[paso - 1].texto}`);
+      // Dar tiempo para que el DOM se actualice
+      setTimeout(() => {
+        const firstOption = document.querySelector(`input[name="pregunta-${paso}"]`) as HTMLElement;
+        if (firstOption) firstOption.focus();
+      }, 100);
     }
-  }, []);
+  }, [paso]);
 
   const actualizarPuntajes = useCallback((preguntaIndex: number, opcionIndex: number) => {
     setPuntajes(prev => {
@@ -264,6 +291,44 @@ const DecisionGuide: React.FC = () => {
         generadorGas: prev.generadorGas + puntajeOpcion.generadorGas
       };
     });
+  }, []);
+
+  // Manejar selección de respuesta
+  const handleSeleccion = useCallback((pasoActual: number, opcionIndex: number) => {
+    setRespuestas(prev => {
+      const newRespuestas = [...prev];
+      newRespuestas[pasoActual] = opcionIndex;
+      return newRespuestas;
+    });
+    
+    actualizarPuntajes(pasoActual, opcionIndex);
+    
+    // Avanzar directamente al siguiente paso
+    setPaso(p => p + 1);
+    if (pasoActual === preguntas.length - 1) {
+      setAnnouncement('Procesando tus respuestas para generar recomendaciones');
+    } else {
+      setAnnouncement(`Avanzando a la pregunta ${pasoActual + 2} de ${preguntas.length}`);
+    }
+  }, [actualizarPuntajes, preguntas.length]);
+
+  // Teclado: mover entre opciones con flechas
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>, currentPaso: number) => {
+    const radioInputs = Array.from(document.querySelectorAll(`input[name="pregunta-${currentPaso}"]`)) as HTMLInputElement[];
+    const currentIndex = radioInputs.findIndex(input => input === document.activeElement);
+    
+    if (currentIndex !== -1) {
+      switch (e.key) {
+        case 'ArrowUp':
+          e.preventDefault();
+          if (currentIndex > 0) radioInputs[currentIndex - 1].focus();
+          break;
+        case 'ArrowDown':
+          e.preventDefault();
+          if (currentIndex < radioInputs.length - 1) radioInputs[currentIndex + 1].focus();
+          break;
+      }
+    }
   }, []);
 
   // Determinar la mejor opción
@@ -322,10 +387,36 @@ const DecisionGuide: React.FC = () => {
       panelesSolares: 0,
       generadorGas: 0
     });
+    setAnnouncement('Asistente reiniciado. Volviendo a la pantalla inicial.');
   }, []);
+
+  // Gestionar navegación al simulador
+  const navegarAlSimulador = useCallback((e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    const tabElement = document.querySelector('[aria-controls="panel-simulador"]');
+    if (tabElement && tabElement instanceof HTMLElement) {
+      tabElement.click();
+      setAnnouncement('Navegando al simulador personalizado');
+    }
+  }, []);
+
+  // Generar descripción textual para los gráficos (accesibilidad)
+  const generarDescripcionGrafico = useMemo(() => {
+    if (paso <= preguntas.length) return '';
+    
+    const mejorSistema = recomendaciones[mejorOpcion.nombre]?.titulo || '';
+    const descripcionBarras = datosBarras
+      .map(item => `${item.nombre}: ${item.compatibilidad}% de compatibilidad`)
+      .join('. ');
+    
+    return `Resultados: ${mejorSistema} es la opción más compatible con tus necesidades. ${descripcionBarras}.`;
+  }, [datosBarras, mejorOpcion.nombre, paso]);
 
   return (
     <div className="space-y-6">
+      {/* Región para anuncios de accesibilidad */}
+      <LiveRegion message={announcement || generarDescripcionGrafico} />
+      
       <Card className="w-full bg-white dark:bg-gray-800 shadow-lg">
         <CardHeader className="border-b border-gray-200 dark:border-gray-700">
           <CardTitle className="text-2xl font-bold text-gray-900 dark:text-gray-100">
@@ -347,15 +438,21 @@ const DecisionGuide: React.FC = () => {
                 Al final, recibirás una recomendación personalizada con análisis detallado.
               </p>
               <button
+                ref={iniciarButtonRef}
                 onClick={() => setPaso(1)}
-                className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                 aria-label="Iniciar el asistente de decisión"
               >
                 Iniciar Asistente
               </button>
             </div>
           ) : paso <= preguntas.length ? (
-            <div role="form" aria-label={`Pregunta ${paso} de ${preguntas.length}`} className="max-w-3xl mx-auto">
+            <div 
+              role="form" 
+              aria-label={`Pregunta ${paso} de ${preguntas.length}`} 
+              className="max-w-3xl mx-auto"
+              onKeyDown={(e) => handleKeyDown(e, paso)}
+            >
               <div className="mb-6">
                 <div className="flex justify-between items-center mb-2">
                   <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200">
@@ -367,11 +464,18 @@ const DecisionGuide: React.FC = () => {
                 </div>
                 
                 {/* Barra de progreso */}
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-4">
-                  <div 
-                    className="bg-blue-500 h-2 rounded-full" 
-                    style={{ width: `${(paso / preguntas.length) * 100}%` }}
-                  />
+                <div 
+                  className={styles.progressBarContainer}
+                  role="progressbar"
+                  aria-label="Progreso del cuestionario"
+                  aria-valuenow={Math.floor((paso / preguntas.length) * 100)}
+                  aria-valuemin="0"
+                  aria-valuemax="100"
+                >
+                  <style>
+                    {`:root { --progress-width: ${Math.floor((paso / preguntas.length) * 100)}%; }`}
+                  </style>
+                  <div className={styles.progressBar} />
                 </div>
                 
                 <h4 className="text-lg font-medium mb-2 text-gray-800 dark:text-gray-200">
@@ -385,7 +489,8 @@ const DecisionGuide: React.FC = () => {
                 )}
               </div>
               
-              <div className="space-y-4" role="radiogroup" aria-label="Opciones de respuesta">
+              <fieldset className="space-y-4">
+                <legend className="sr-only">Opciones de respuesta para pregunta {paso}</legend>
                 {preguntas[paso - 1].opciones.map((opcion, index) => (
                   <label
                     key={index}
@@ -393,16 +498,26 @@ const DecisionGuide: React.FC = () => {
                       flex items-center p-4 border rounded-lg cursor-pointer 
                       hover:bg-gray-50 dark:hover:bg-gray-700 focus-within:ring-2 focus-within:ring-blue-500
                       transition-colors
-                      ${respuestas[paso - 1] === index ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30' : 'border-gray-200 dark:border-gray-600'}
+                      ${respuestas[paso - 1] === index ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/30' : 'border-gray-200 dark:border-gray-600'}
                     `}
+                    tabIndex={-1}
                   >
                     <input
                       type="radio"
                       name={`pregunta-${paso}`}
                       value={index}
+                      id={`pregunta-${paso}-opcion-${index}`}
                       checked={respuestas[paso - 1] === index}
                       onChange={() => handleSeleccion(paso - 1, index)}
                       className="w-4 h-4 text-blue-600"
+                      ref={el => { 
+                        if (opcionesRef.current.length <= index) {
+                          opcionesRef.current.push(el);
+                        } else {
+                          opcionesRef.current[index] = el;
+                        }
+                      }}
+                      tabIndex={0}
                       aria-label={opcion.texto}
                     />
                     <span className="ml-3 text-gray-700 dark:text-gray-300">
@@ -410,11 +525,18 @@ const DecisionGuide: React.FC = () => {
                     </span>
                   </label>
                 ))}
-              </div>
+              </fieldset>
               
               <div className="flex justify-between mt-8">
                 <button
-                  onClick={() => paso > 1 ? setPaso(p => p - 1) : reiniciarAsistente()}
+                  onClick={() => {
+                    if (paso > 1) {
+                      setPaso(p => p - 1);
+                      setAnnouncement(`Regresando a la pregunta ${paso - 1} de ${preguntas.length}`);
+                    } else {
+                      reiniciarAsistente();
+                    }
+                  }}
                   className="px-4 py-2 text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white focus:outline-none focus:ring-2 focus:ring-gray-500"
                   aria-label={paso > 1 ? "Regresar a la pregunta anterior" : "Regresar al inicio"}
                 >
@@ -422,9 +544,16 @@ const DecisionGuide: React.FC = () => {
                 </button>
                 
                 <button
-                  onClick={() => setPaso(p => p + 1)}
+                  onClick={() => {
+                    if (respuestas[paso - 1] !== undefined) {
+                      setPaso(p => p + 1);
+                      if (paso === preguntas.length) {
+                        setAnnouncement('Procesando tus respuestas para generar recomendaciones');
+                      }
+                    }
+                  }}
                   disabled={respuestas[paso - 1] === undefined}
-                  className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                   aria-label={paso === preguntas.length ? "Ver resultados" : "Siguiente pregunta"}
                 >
                   {paso === preguntas.length ? 'Ver Resultados' : 'Siguiente'}
@@ -432,7 +561,12 @@ const DecisionGuide: React.FC = () => {
               </div>
             </div>
           ) : (
-            <div role="region" aria-label="Resultados del asistente">
+            <div 
+              role="region" 
+              aria-label="Resultados del asistente" 
+              ref={resultadosRef} 
+              tabIndex={-1}
+            >
               <h3 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white text-center">
                 Resultados de tu Evaluación Personalizada
               </h3>
@@ -451,7 +585,7 @@ const DecisionGuide: React.FC = () => {
                   <h4 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
                     Compatibilidad con tus necesidades
                   </h4>
-                  <div className="h-80">
+                  <div className={styles.chartContainer} aria-hidden="true">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart
                         data={datosBarras}
@@ -472,13 +606,24 @@ const DecisionGuide: React.FC = () => {
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
+                  {/* Descripción textual accesible del gráfico */}
+                  <div className="sr-only">
+                    <h5>Descripción de la gráfica de compatibilidad</h5>
+                    <ul>
+                      {datosBarras.map((item, index) => (
+                        <li key={index}>
+                          {item.nombre}: {item.compatibilidad}% de compatibilidad
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
                 
                 <div>
                   <h4 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
                     Análisis por categorías
                   </h4>
-                  <div className="h-80">
+                  <div className={styles.chartContainer} aria-hidden="true">
                     <ResponsiveContainer width="100%" height="100%">
                       <RadarChart data={datosRadar}>
                         <PolarGrid />
@@ -508,6 +653,20 @@ const DecisionGuide: React.FC = () => {
                         <Legend />
                       </RadarChart>
                     </ResponsiveContainer>
+                  </div>
+                  {/* Descripción textual accesible del gráfico */}
+                  <div className="sr-only">
+                    <h5>Análisis por categorías en porcentaje</h5>
+                    <p>Comparación de los tres sistemas de energía en cinco categorías:</p>
+                    <ul>
+                      {datosRadar.map((item, i) => (
+                        <li key={i}>
+                          {item.categoria}: Red Eléctrica {item.redElectrica}%,
+                          Paneles Solares {item.panelesSolares}%,
+                          Generador a Gas {item.generadorGas}%
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 </div>
               </div>
@@ -550,7 +709,7 @@ const DecisionGuide: React.FC = () => {
               <div className="flex space-x-4">
                 <button
                   onClick={reiniciarAsistente}
-                  className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+                  className="flex-1 px-6 py-3 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
                   aria-label="Reiniciar el asistente"
                 >
                   Comenzar de Nuevo
@@ -558,14 +717,9 @@ const DecisionGuide: React.FC = () => {
                 
                 <a
                   href="#simulador"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    const tabElement = document.querySelector('[aria-selected="false"][role="tab"]');
-                    if (tabElement && tabElement instanceof HTMLElement) {
-                      tabElement.click();
-                    }
-                  }}
-                  className="flex-1 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-center"
+                  onClick={navegarAlSimulador}
+                  className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-center"
+                  role="button"
                 >
                   Ir al Simulador
                 </a>

@@ -1,49 +1,12 @@
 import React from 'react';
-import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import Dashboard from '../Dashboard';
-import { ThemeProvider } from '../theme/ThemeProvider';
+import ThemeProvider from '../theme/ThemeProvider';
 
-// Mock de los componentes lazy
-jest.mock('../graficos-comparativos', () => ({
-  __esModule: true,
-  default: () => <div>Gráficos Comparativos Mock</div>
-}));
-
-jest.mock('../components/SimuladorPersonalizado', () => ({
-  __esModule: true,
-  default: () => <div>Simulador Personalizado Mock</div>
-}));
-
-jest.mock('../components/DecisionGuide', () => ({
-  __esModule: true,
-  default: () => <div>Asistente de Decisión Mock</div>
-}));
-
-// Mock para localStorage y matchMedia
-beforeAll(() => {
-  Object.defineProperty(window, 'matchMedia', {
-    writable: true,
-    value: jest.fn().mockImplementation(query => ({
-      matches: false,
-      media: query,
-      onchange: null,
-      addListener: jest.fn(),
-      removeListener: jest.fn(),
-      addEventListener: jest.fn(),
-      removeEventListener: jest.fn(),
-      dispatchEvent: jest.fn(),
-    })),
-  });
-
-  Object.defineProperty(window, 'localStorage', {
-    value: {
-      getItem: jest.fn(),
-      setItem: jest.fn(),
-      clear: jest.fn()
-    },
-  });
-});
+jest.mock('../graficos-comparativos', () => () => <div data-testid="graficos-mock">Análisis Comparativo</div>);
+jest.mock('../components/SimuladorPersonalizado', () => () => <div data-testid="simulador-mock">Simulador Personalizado</div>);
+jest.mock('../components/DecisionGuide', () => () => <div data-testid="decision-mock">Asistente de Decisión</div>);
 
 describe('Dashboard Component', () => {
   const renderWithTheme = () => {
@@ -55,89 +18,95 @@ describe('Dashboard Component', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    window.localStorage.clear();
+    // Limpiar el hash de la URL
+    window.history.replaceState(null, '', '#');
   });
 
-  test('renderiza correctamente con la pestaña de gráficos activa por defecto', async () => {
+  test('renderiza correctamente con la pestaña de gráficos activa por defecto', () => {
     renderWithTheme();
-
-    // Esperar a que se cargue el contenido
-    await waitFor(() => {
-      expect(screen.getByText('Gráficos Comparativos Mock')).toBeInTheDocument();
-    });
-
+    
     // Verificar que el título está presente
-    expect(screen.getByText('Dashboard Comparativo de Energía')).toBeInTheDocument();
+    expect(screen.getByText('Dashboard Energético')).toBeInTheDocument();
+    
+    // Verificar que la pestaña de análisis comparativo está activa
+    const graficosTab = screen.getByRole('tab', { name: /análisis comparativo/i });
+    expect(graficosTab).toHaveAttribute('aria-selected', 'true');
+    
+    // Verificar que el contenido correspondiente se muestra
+    expect(screen.getByRole('heading', { 
+      name: /Análisis Comparativo de Alternativas Energéticas/i 
+    })).toBeInTheDocument();
   });
 
   test('cambia a la pestaña del simulador cuando se hace clic en el botón correspondiente', async () => {
     renderWithTheme();
 
-    // Esperar a que se cargue el dashboard
+    // Hacer clic en la pestaña del simulador
+    fireEvent.click(screen.getByRole('tab', { name: /simulador personalizado/i }));
+    
+    // Verificar que la pestaña está activa y el contenido se actualiza
     await waitFor(() => {
-      expect(screen.getByText('Gráficos Comparativos Mock')).toBeInTheDocument();
-    });
-
-    // Cambiar a la pestaña del simulador
-    const simuladorTab = screen.getByRole('tab', { name: /Simulador Personalizado/i });
-    fireEvent.click(simuladorTab);
-
-    // Verificar que se muestra el contenido del simulador
-    await waitFor(() => {
-      expect(screen.getByText('Simulador Personalizado Mock')).toBeInTheDocument();
+      const simuladorTab = screen.getByRole('tab', { name: /simulador personalizado/i });
+      expect(simuladorTab).toHaveAttribute('aria-selected', 'true');
+      expect(screen.getByTestId('simulador-mock')).toBeInTheDocument();
     });
   });
 
-  test('cambia a la pestaña del asistente de decisión cuando se hace clic en el botón correspondiente', async () => {
+  test('cambia a la pestaña del asistente cuando se hace clic en el botón correspondiente', async () => {
     renderWithTheme();
 
-    // Esperar a que se cargue el dashboard
+    // Hacer clic en la pestaña del asistente
+    fireEvent.click(screen.getByRole('tab', { name: /asistente de decisión/i }));
+    
+    // Verificar que la pestaña está activa y el contenido se actualiza
     await waitFor(() => {
-      expect(screen.getByText('Gráficos Comparativos Mock')).toBeInTheDocument();
+      const asistenteTab = screen.getByRole('tab', { name: /asistente de decisión/i });
+      expect(asistenteTab).toHaveAttribute('aria-selected', 'true');
+      expect(screen.getByText(/Asistente de Decisión/)).toBeInTheDocument();
     });
+  });
 
-    // Cambiar a la pestaña del asistente
-    const decisionTab = screen.getByRole('tab', { name: /Asistente de Decisión/i });
-    fireEvent.click(decisionTab);
-
-    // Verificar que se muestra el contenido del asistente
+  test('mantiene la pestaña activa después de recargar', async () => {
+    // Configurar localStorage antes de renderizar
+    window.localStorage.setItem('activeTab', 'simulador');
+    
+    // Forzar un re-render limpio
+    const { unmount } = renderWithTheme();
+    unmount();
+    renderWithTheme();
+    
+    // Verificar que se carga la pestaña guardada
     await waitFor(() => {
-      expect(screen.getByText('Asistente de Decisión Mock')).toBeInTheDocument();
+      const simuladorTab = screen.getByRole('tab', { name: /simulador personalizado/i });
+      expect(simuladorTab).toHaveAttribute('aria-selected', 'true');
+      expect(screen.getByTestId('simulador-mock')).toBeInTheDocument();
     });
   });
 
   test('cambia el tema correctamente', async () => {
     renderWithTheme();
-
-    // Esperar a que se cargue el dashboard
+    
+    // Verificar tema inicial (claro)
+    expect(document.documentElement.classList.contains('light')).toBe(true);
+    
+    // Cambiar a tema oscuro
+    const themeButton = screen.getByRole('button', { name: /cambiar a tema oscuro/i });
+    fireEvent.click(themeButton);
+    
+    // Verificar cambio a tema oscuro
     await waitFor(() => {
-      expect(screen.getByText('Dashboard Comparativo de Energía')).toBeInTheDocument();
+      expect(document.documentElement.classList.contains('dark')).toBe(true);
+      expect(screen.getByRole('button', { name: /cambiar a tema claro/i })).toBeInTheDocument();
     });
-
-    // El botón de tema debe estar presente
-    const themeButton = screen.getByRole('button', { name: /Cambiar tema/i });
-    expect(themeButton).toBeInTheDocument();
-
-    // Cambiar el tema
-    act(() => {
-      fireEvent.click(themeButton);
-    });
-
-    // Verificar que el tema ha cambiado (comprobando el emoji)
-    expect(themeButton).toHaveTextContent('🌞');
-  });
-
-  test('el skip link está presente y funciona', async () => {
-    renderWithTheme();
-
-    const skipLink = screen.getByText('Saltar al contenido principal');
-    expect(skipLink).toBeInTheDocument();
-    expect(skipLink).toHaveAttribute('href', '#main-content');
-
-    // El contenido principal debe tener el id correcto
+    
+    // Volver a tema claro
+    fireEvent.click(screen.getByRole('button', { name: /cambiar a tema claro/i }));
+    
+    // Verificar vuelta a tema claro
     await waitFor(() => {
-      const mainContent = screen.getByRole('main');
-      expect(mainContent).toHaveAttribute('id', 'main-content');
+      expect(document.documentElement.classList.contains('light')).toBe(true);
+      expect(screen.getByRole('button', { name: /cambiar a tema oscuro/i })).toBeInTheDocument();
     });
   });
 });

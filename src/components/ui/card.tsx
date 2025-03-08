@@ -9,8 +9,14 @@ export const CardHeader: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({ cla
   <div className={`p-6 pb-3 ${className || ''}`} {...props} />
 );
 
-export const CardTitle: React.FC<React.HTMLAttributes<HTMLHeadingElement>> = ({ className, ...props }) => (
-  <h3 className={`text-xl font-semibold ${className || ''}`} {...props} />
+interface CardTitleProps extends React.HTMLAttributes<HTMLHeadingElement> {
+  children: React.ReactNode;
+}
+
+export const CardTitle: React.FC<CardTitleProps> = ({ className, children, ...props }) => (
+  <h3 className={`text-xl font-semibold ${className || ''}`} {...props}>
+    {children}
+  </h3>
 );
 
 export const CardDescription: React.FC<React.HTMLAttributes<HTMLParagraphElement>> = ({ className, ...props }) => (

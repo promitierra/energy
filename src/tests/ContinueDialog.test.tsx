@@ -1,64 +1,88 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { ContinueDialog } from '../components/ui/ContinueDialog';
+import '@testing-library/jest-dom';
+import ContinueDialog from '../components/ui/ContinueDialog';
+import { ThemeProvider } from '../theme/ThemeProvider';
 
 describe('ContinueDialog', () => {
-  const mockOnConfirm = jest.fn();
-  const mockOnCancel = jest.fn();
+  const defaultProps = {
+    isOpen: true,
+    title: "¿Continuar?",
+    description: "¿Desea continuar con la iteración?",
+    confirmLabel: "Continuar",
+    cancelLabel: "Cancelar",
+    onConfirm: jest.fn(),
+    onCancel: jest.fn()
+  };
+
+  const renderWithTheme = (props = defaultProps) => {
+    return render(
+      <ThemeProvider>
+        <ContinueDialog {...props} />
+      </ThemeProvider>
+    );
+  };
 
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  it('should not render when isOpen is false', () => {
-    render(
-      <ContinueDialog
-        isOpen={false}
-        onConfirm={mockOnConfirm}
-        onCancel={mockOnCancel}
-      />
-    );
+  it('renderiza correctamente cuando está abierto', () => {
+    renderWithTheme();
     
-    expect(screen.queryByText('¿Desea continuar con la iteración?')).not.toBeInTheDocument();
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByText(defaultProps.title)).toBeInTheDocument();
+    expect(screen.getByText(defaultProps.description)).toBeInTheDocument();
+    expect(screen.getByText(defaultProps.confirmLabel)).toBeInTheDocument();
+    expect(screen.getByText(defaultProps.cancelLabel)).toBeInTheDocument();
   });
 
-  it('should render when isOpen is true', () => {
-    render(
-      <ContinueDialog
-        isOpen={true}
-        onConfirm={mockOnConfirm}
-        onCancel={mockOnCancel}
-      />
-    );
-    
-    expect(screen.getByText('¿Desea continuar con la iteración?')).toBeInTheDocument();
-    expect(screen.getByText('Continuar')).toBeInTheDocument();
-    expect(screen.getByText('Cancelar')).toBeInTheDocument();
+  it('no renderiza cuando está cerrado', () => {
+    renderWithTheme({ ...defaultProps, isOpen: false });
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
-  it('should call onConfirm when continue button is clicked', () => {
-    render(
-      <ContinueDialog
-        isOpen={true}
-        onConfirm={mockOnConfirm}
-        onCancel={mockOnCancel}
-      />
-    );
+  it('maneja clics en los botones correctamente', () => {
+    renderWithTheme();
     
-    fireEvent.click(screen.getByText('Continuar'));
-    expect(mockOnConfirm).toHaveBeenCalledTimes(1);
+    // Probar botón confirmar
+    fireEvent.click(screen.getByText(defaultProps.confirmLabel));
+    expect(defaultProps.onConfirm).toHaveBeenCalledTimes(1);
+    
+    // Probar botón cancelar
+    fireEvent.click(screen.getByText(defaultProps.cancelLabel));
+    expect(defaultProps.onCancel).toHaveBeenCalledTimes(1);
   });
 
-  it('should call onCancel when cancel button is clicked', () => {
-    render(
-      <ContinueDialog
-        isOpen={true}
-        onConfirm={mockOnConfirm}
-        onCancel={mockOnCancel}
-      />
-    );
+  it('maneja eventos de teclado', () => {
+    renderWithTheme();
     
-    fireEvent.click(screen.getByText('Cancelar'));
-    expect(mockOnCancel).toHaveBeenCalledTimes(1);
+    // Probar Enter en botón confirmar
+    const confirmButton = screen.getByText(defaultProps.confirmLabel);
+    fireEvent.keyDown(confirmButton, { key: 'Enter' });
+    expect(defaultProps.onConfirm).toHaveBeenCalledTimes(1);
+    
+    // Probar Space en botón cancelar
+    const cancelButton = screen.getByText(defaultProps.cancelLabel);
+    fireEvent.keyDown(cancelButton, { key: ' ' });
+    expect(defaultProps.onCancel).toHaveBeenCalledTimes(1);
+    
+    // Probar Escape
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+    expect(defaultProps.onCancel).toHaveBeenCalledTimes(2);
+  });
+
+  it('es accesible mediante teclado', () => {
+    renderWithTheme();
+    
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toHaveAttribute('aria-labelledby');
+    expect(dialog).toHaveAttribute('aria-describedby');
+    
+    const confirmButton = screen.getByText(defaultProps.confirmLabel);
+    const cancelButton = screen.getByText(defaultProps.cancelLabel);
+    
+    expect(confirmButton).toHaveAttribute('type', 'button');
+    expect(cancelButton).toHaveAttribute('type', 'button');
   });
 });

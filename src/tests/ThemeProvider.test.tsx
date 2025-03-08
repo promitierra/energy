@@ -2,42 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ThemeProvider, useTheme } from '../theme/ThemeProvider';
 
-// Mock para localStorage
-const mockLocalStorage = (() => {
-  let store: Record<string, string> = {};
-  return {
-    getItem: (key: string) => store[key] || null,
-    setItem: (key: string, value: string) => {
-      store[key] = value.toString();
-    },
-    clear: () => {
-      store = {};
-    }
-  };
-})();
-
-Object.defineProperty(window, 'localStorage', {
-  value: mockLocalStorage
-});
-
-// Mock window.matchMedia
-beforeAll(() => {
-  Object.defineProperty(window, 'matchMedia', {
-    writable: true,
-    value: jest.fn().mockImplementation(query => ({
-      matches: query === '(prefers-color-scheme: dark)',
-      media: query,
-      onchange: null,
-      addListener: jest.fn(),
-      removeListener: jest.fn(),
-      addEventListener: jest.fn(),
-      removeEventListener: jest.fn(),
-      dispatchEvent: jest.fn(),
-    })),
-  });
-});
-
-// Componente de prueba
+// Test component
 const TestComponent = () => {
   const { theme, toggleTheme } = useTheme();
   return (
@@ -50,9 +15,9 @@ const TestComponent = () => {
 
 describe('ThemeProvider', () => {
   beforeEach(() => {
-    mockLocalStorage.clear();
-    jest.clearAllMocks();
+    window.localStorage.clear();
     document.documentElement.classList.remove('light', 'dark');
+    window.__setPrefersDarkMode(false);
   });
 
   test('debe establecer el tema light por defecto', () => {
@@ -67,7 +32,7 @@ describe('ThemeProvider', () => {
   });
 
   test('debe cargar el tema desde localStorage si está disponible', () => {
-    mockLocalStorage.setItem('theme', 'dark');
+    window.localStorage.setItem('theme', 'dark');
     
     render(
       <ThemeProvider>
@@ -93,30 +58,17 @@ describe('ThemeProvider', () => {
     fireEvent.click(toggleButton);
     expect(screen.getByTestId('theme-value')).toHaveTextContent('dark');
     expect(document.documentElement.classList.contains('dark')).toBe(true);
-    expect(mockLocalStorage.getItem('theme')).toBe('dark');
+    expect(window.localStorage.getItem('theme')).toBe('dark');
     
     // Cambiar de nuevo a light
     fireEvent.click(toggleButton);
     expect(screen.getByTestId('theme-value')).toHaveTextContent('light');
     expect(document.documentElement.classList.contains('light')).toBe(true);
-    expect(mockLocalStorage.getItem('theme')).toBe('light');
+    expect(window.localStorage.getItem('theme')).toBe('light');
   });
 
   test('debe usar el tema del sistema si está disponible y no hay preferencia guardada', () => {
-    // Simulamos que el sistema prefiere el tema oscuro
-    Object.defineProperty(window, 'matchMedia', {
-      writable: true,
-      value: jest.fn().mockImplementation(query => ({
-        matches: query === '(prefers-color-scheme: dark)',
-        media: query,
-        onchange: null,
-        addListener: jest.fn(),
-        removeListener: jest.fn(),
-        addEventListener: jest.fn(),
-        removeEventListener: jest.fn(),
-        dispatchEvent: jest.fn(),
-      })),
-    });
+    window.__setPrefersDarkMode(true);
     
     render(
       <ThemeProvider>
@@ -129,7 +81,6 @@ describe('ThemeProvider', () => {
   });
 
   test('debe lanzar un error si useTheme se usa fuera de ThemeProvider', () => {
-    // Silenciamos los errores de consola para esta prueba
     const consoleErrorMock = jest.spyOn(console, 'error').mockImplementation();
     
     expect(() => {

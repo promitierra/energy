@@ -1,9 +1,7 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import Tooltip from './ui/tooltip';
 import {
-  LineChart,
-  Line,
   BarChart,
   Bar,
   XAxis,
@@ -57,7 +55,16 @@ const SimuladorPersonalizado: React.FC = () => {
 
   const [errors, setErrors] = useState<FormErrors>({});
   const [resultados, setResultados] = useState<ResultadosSimulacion | null>(null);
-  const [mostrarAvanzado, setMostrarAvanzado] = useState(false);
+
+  const formRef = useRef<HTMLFormElement>(null);
+  const resultadosRef = useRef<HTMLDivElement>(null);
+
+  // Efecto para manejar el foco después de calcular
+  useEffect(() => {
+    if (resultados && resultadosRef.current) {
+      resultadosRef.current.focus();
+    }
+  }, [resultados]);
 
   const validarCampo = (name: string, value: string): string | undefined => {
     if (!value) return 'El campo es requerido';
@@ -172,13 +179,18 @@ const SimuladorPersonalizado: React.FC = () => {
     setResultados(null);
   }, []);
 
-  const toggleAvanzado = useCallback(() => {
-    setMostrarAvanzado(prev => !prev);
-  }, []);
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: 'COP',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(value);
+  };
 
   return (
     <div className="space-y-6">
-      <Card className="dark:bg-gray-800 shadow-lg">
+      <Card className="dark:bg-gray-800 shadow-lg" role="region" aria-label="Simulador de energía solar">
         <CardHeader className="bg-blue-50 dark:bg-gray-700 pb-2 rounded-t-lg">
           <CardTitle className="text-xl text-center text-blue-800 dark:text-blue-200">
             Simulador Personalizado de Energía Solar
@@ -188,7 +200,16 @@ const SimuladorPersonalizado: React.FC = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-6">
-          <div className="p-4 border-2 border-dashed border-blue-300 dark:border-blue-600 rounded-lg mb-6 shadow-lg">
+          <form 
+            ref={formRef}
+            onSubmit={(e) => {
+              e.preventDefault();
+              calcular();
+            }}
+            className="p-4 border-2 border-dashed border-blue-300 dark:border-blue-600 rounded-lg mb-6 shadow-lg"
+            aria-label="Formulario de simulación"
+            data-testid="simulador-form"
+          >
             <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-5 text-center">
               📋 Complete los campos requeridos
             </h3>
@@ -197,15 +218,17 @@ const SimuladorPersonalizado: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Consumo Mensual */}
                 <div className="bg-white dark:bg-gray-700 p-4 rounded-lg shadow-md border-l-4 border-green-500">
-                  <label
-                    htmlFor="consumoMensual"
-                    className="block text-sm font-bold text-gray-700 dark:text-gray-200"
-                  >
-                    Consumo mensual (kWh) *
-                  </label>
-                  <p className="text-xs text-gray-600 dark:text-gray-300 mb-2">
-                    El consumo mensual típico de un hogar está entre 150-300 kWh
-                  </p>
+                  <div className="flex items-center justify-between">
+                    <label
+                      htmlFor="consumoMensual"
+                      className="block text-sm font-bold text-gray-700 dark:text-gray-200"
+                    >
+                      Consumo mensual (kWh) *
+                    </label>
+                    <Tooltip content="El consumo mensual típico de un hogar está entre 150-300 kWh">
+                      <span className="text-gray-500 cursor-help" aria-hidden="true">ℹ️</span>
+                    </Tooltip>
+                  </div>
                   <input
                     type="number"
                     id="consumoMensual"
@@ -214,11 +237,18 @@ const SimuladorPersonalizado: React.FC = () => {
                     onChange={handleChange}
                     placeholder="Ej: 250"
                     className="mt-1 block w-full px-4 py-2 bg-white dark:bg-gray-800 border-2 border-blue-500 dark:border-blue-400 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 dark:text-white"
-                    style={{ display: 'block', width: '100%' }}
-                    required
+                    aria-required="true"
+                    aria-describedby="consumoMensual-error consumoMensual-hint"
+                    aria-invalid={!!errors.consumoMensual}
+                    min="0"
+                    max="5000"
+                    data-testid="input-consumo-mensual"
                   />
+                  <p id="consumoMensual-hint" className="text-xs text-gray-600 dark:text-gray-300 mt-1">
+                    El consumo mensual típico de un hogar está entre 150-300 kWh
+                  </p>
                   {errors.consumoMensual && (
-                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                    <p id="consumoMensual-error" className="mt-1 text-sm text-red-600 dark:text-red-400" role="alert">
                       {errors.consumoMensual}
                     </p>
                   )}
@@ -226,15 +256,17 @@ const SimuladorPersonalizado: React.FC = () => {
                 
                 {/* Tarifa de Energía */}
                 <div className="bg-white dark:bg-gray-700 p-4 rounded-lg shadow-md border-l-4 border-orange-500">
-                  <label
-                    htmlFor="precioElectricidad"
-                    className="block text-sm font-bold text-gray-700 dark:text-gray-200"
-                  >
-                    Tarifa de energía (COP/kWh) *
-                  </label>
-                  <p className="text-xs text-gray-600 dark:text-gray-300 mb-2">
-                    Puede encontrar este valor en su factura de energía
-                  </p>
+                  <div className="flex items-center justify-between">
+                    <label
+                      htmlFor="precioElectricidad"
+                      className="block text-sm font-bold text-gray-700 dark:text-gray-200"
+                    >
+                      Tarifa de energía (COP/kWh) *
+                    </label>
+                    <Tooltip content="Puede encontrar este valor en su factura de energía">
+                      <span className="text-gray-500 cursor-help" aria-hidden="true">ℹ️</span>
+                    </Tooltip>
+                  </div>
                   <input
                     type="number"
                     id="precioElectricidad"
@@ -243,11 +275,18 @@ const SimuladorPersonalizado: React.FC = () => {
                     onChange={handleChange}
                     placeholder="Ej: 454"
                     className="mt-1 block w-full px-4 py-2 bg-white dark:bg-gray-800 border-2 border-orange-500 dark:border-orange-400 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 dark:text-white"
-                    style={{ display: 'block', width: '100%' }}
-                    required
+                    aria-required="true"
+                    aria-describedby="precioElectricidad-error precioElectricidad-hint"
+                    aria-invalid={!!errors.precioElectricidad}
+                    min="300"
+                    max="1000"
+                    data-testid="input-precio-electricidad"
                   />
+                  <p id="precioElectricidad-hint" className="text-xs text-gray-600 dark:text-gray-300 mt-1">
+                    Puede encontrar este valor en su factura de energía
+                  </p>
                   {errors.precioElectricidad && (
-                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                    <p id="precioElectricidad-error" className="mt-1 text-sm text-red-600 dark:text-red-400" role="alert">
                       {errors.precioElectricidad}
                     </p>
                   )}
@@ -275,8 +314,9 @@ const SimuladorPersonalizado: React.FC = () => {
                     onChange={handleChange}
                     placeholder="Ej: 5"
                     className="mt-1 block w-full px-4 py-2 bg-white dark:bg-gray-800 border-2 border-yellow-500 dark:border-yellow-400 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 dark:text-white"
-                    style={{ display: 'block', width: '100%' }}
                     required
+                    aria-invalid={!!errors.horasSol}
+                    data-testid="input-horas-sol"
                   />
                   {errors.horasSol && (
                     <p className="mt-1 text-sm text-red-600 dark:text-red-400">
@@ -304,8 +344,9 @@ const SimuladorPersonalizado: React.FC = () => {
                     onChange={handleChange}
                     placeholder="Ej: 9500000"
                     className="mt-1 block w-full px-4 py-2 bg-white dark:bg-gray-800 border-2 border-purple-500 dark:border-purple-400 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 dark:text-white"
-                    style={{ display: 'block', width: '100%' }}
                     required
+                    aria-invalid={!!errors.inversionInicial}
+                    data-testid="input-inversion-inicial"
                   />
                   {errors.inversionInicial && (
                     <p className="mt-1 text-sm text-red-600 dark:text-red-400">
@@ -317,31 +358,41 @@ const SimuladorPersonalizado: React.FC = () => {
 
               <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 pt-6 justify-center mt-6 border-t border-gray-200 dark:border-gray-700">
                 <button
-                  onClick={calcular}
+                  type="submit"
                   className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white text-base font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
                   aria-label="Calcular simulación"
+                  data-testid="btn-calcular"
                 >
                   🧮 Calcular
                 </button>
                 <button
+                  type="button"
                   onClick={reiniciar}
                   className="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-base font-medium rounded-md shadow-sm hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
                   aria-label="Reiniciar formulario"
+                  data-testid="btn-reiniciar"
                 >
                   🔄 Reiniciar
                 </button>
               </div>
             </div>
-          </div>
+          </form>
           
-          <div className="text-center text-sm text-gray-500 dark:text-gray-400">
+          <div className="text-center text-sm text-gray-500 dark:text-gray-400" role="note">
             <p>* Campos obligatorios</p>
           </div>
         </CardContent>
       </Card>
 
       {resultados && (
-        <div className="space-y-6" data-testid="resultado-calculo">
+        <div 
+          className="space-y-6" 
+          data-testid="resultado-calculo"
+          ref={resultadosRef}
+          tabIndex={-1}
+          role="region"
+          aria-label="Resultados de la simulación"
+        >
           <Card className="dark:bg-gray-800">
             <CardHeader>
               <CardTitle className="dark:text-gray-100">Resultados de la simulación</CardTitle>
@@ -364,11 +415,11 @@ const SimuladorPersonalizado: React.FC = () => {
                     </li>
                     <li className="flex items-center">
                       <span className="inline-block w-3 h-3 bg-orange-500 rounded-full mr-2"></span>
-                      <span>Ahorro mensual estimado: <span className="font-semibold">${Math.round(resultados.ahorroAnual / 12).toLocaleString()} COP</span></span>
+                      <span>Ahorro mensual estimado: <span className="font-semibold">{formatCurrency(Math.round(resultados.ahorroAnual / 12))}</span></span>
                     </li>
                     <li className="flex items-center">
                       <span className="inline-block w-3 h-3 bg-purple-500 rounded-full mr-2"></span>
-                      <span>Ahorro anual estimado: <span className="font-semibold">${Math.round(resultados.ahorroAnual).toLocaleString()} COP</span></span>
+                      <span>Ahorro anual estimado: <span className="font-semibold">{formatCurrency(Math.round(resultados.ahorroAnual))}</span></span>
                     </li>
                     <li className="flex items-center">
                       <span className="inline-block w-3 h-3 bg-red-500 rounded-full mr-2"></span>
@@ -410,13 +461,13 @@ const SimuladorPersonalizado: React.FC = () => {
                         outerRadius={80}
                         fill="#8884d8"
                         dataKey="value"
-                        label={({name, value}: {name: string, value: number}) => `${name}: $${Math.round(value).toLocaleString()}`}
+                        label={({name, value}: {name: string, value: number}) => `${name}: ${formatCurrency(value)}`}
                       >
                         {resultados.comparativaFinanciera.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={COLORES[index % COLORES.length]} />
                         ))}
                       </Pie>
-                      <RechartsTooltip formatter={(value: any) => [`$${value.toLocaleString()}`, '']} />
+                      <RechartsTooltip formatter={(value: any) => [formatCurrency(value), '']} />
                       <Legend />
                     </PieChart>
                   </ResponsiveContainer>
@@ -427,19 +478,19 @@ const SimuladorPersonalizado: React.FC = () => {
                   <ul className="space-y-3 text-sm text-gray-700 dark:text-gray-200">
                     <li className="flex items-center">
                       <span className="inline-block w-3 h-3 bg-blue-500 rounded-full mr-2"></span>
-                      <span>Inversión inicial: <span className="font-semibold">${parseFloat(values.inversionInicial).toLocaleString()}</span></span>
+                      <span>Inversión inicial: <span className="font-semibold">{formatCurrency(parseFloat(values.inversionInicial))}</span></span>
                     </li>
                     <li className="flex items-center">
                       <span className="inline-block w-3 h-3 bg-green-500 rounded-full mr-2"></span>
-                      <span>Ahorro total en 10 años: <span className="font-semibold">${(resultados.ahorroAnual * 10).toLocaleString()}</span></span>
+                      <span>Ahorro total en 10 años: <span className="font-semibold">{formatCurrency(resultados.ahorroAnual * 10)}</span></span>
                     </li>
                     <li className="flex items-center">
                       <span className="inline-block w-3 h-3 bg-orange-500 rounded-full mr-2"></span>
-                      <span>Ganancia neta en 10 años: <span className="font-semibold">${(resultados.ahorroAnual * 10 - parseFloat(values.inversionInicial) * 1.3).toLocaleString()}</span></span>
+                      <span>Ganancia neta en 10 años: <span className="font-semibold">{formatCurrency(resultados.ahorroAnual * 10 - parseFloat(values.inversionInicial) * 1.3)}</span></span>
                     </li>
                     <li className="flex items-center">
                       <span className="inline-block w-3 h-3 bg-purple-500 rounded-full mr-2"></span>
-                      <span>Ganancia neta durante vida útil: <span className="font-semibold">${(resultados.ahorroAnual * parseFloat(values.vidaUtil) - parseFloat(values.inversionInicial) * 1.5).toLocaleString()}</span></span>
+                      <span>Ganancia neta durante vida útil: <span className="font-semibold">{formatCurrency(resultados.ahorroAnual * parseFloat(values.vidaUtil) - parseFloat(values.inversionInicial) * 1.5)}</span></span>
                     </li>
                   </ul>
                 </div>

@@ -13,65 +13,168 @@ describe('SimuladorPersonalizado', () => {
     );
   };
 
+  const llenarFormulario = (datos = {}) => {
+    const valoresPorDefecto = {
+      'input-consumo-mensual': '250',
+      'input-precio-electricidad': '454',
+      'input-horas-sol': '5',
+      'input-inversion-inicial': '9500000'
+    };
+
+    const valores = { ...valoresPorDefecto, ...datos };
+    
+    Object.entries(valores).forEach(([testId, valor]) => {
+      const input = screen.getByTestId(testId);
+      fireEvent.change(input, { target: { value: valor } });
+    });
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  test('muestra error cuando el consumo es inválido', async () => {
-    renderComponent();
-    const input = screen.getByLabelText(/consumo mensual/i);
-    
-    fireEvent.change(input, { target: { value: '-100' } });
-    expect(await screen.findByText(/el consumo debe estar entre 0 y 5000 kwh/i)).toBeInTheDocument();
-  });
+  describe('Validación de campos', () => {
+    test('muestra error cuando el consumo es inválido', async () => {
+      renderComponent();
+      const input = screen.getByTestId('input-consumo-mensual');
+      
+      fireEvent.change(input, { target: { value: '-100' } });
+      expect(await screen.findByText(/el consumo debe estar entre 0 y 5000 kwh/i)).toBeInTheDocument();
+      
+      fireEvent.change(input, { target: { value: '6000' } });
+      expect(await screen.findByText(/el consumo debe estar entre 0 y 5000 kwh/i)).toBeInTheDocument();
+    });
 
-  test('muestra error cuando la tarifa es inválida', async () => {
-    renderComponent();
-    const input = screen.getByLabelText(/tarifa de energía/i);
-    
-    fireEvent.change(input, { target: { value: '100' } });
-    expect(await screen.findByText(/la tarifa debe estar entre 300 y 1000 cop\/kwh/i)).toBeInTheDocument();
-  });
+    test('muestra error cuando la tarifa es inválida', async () => {
+      renderComponent();
+      const input = screen.getByTestId('input-precio-electricidad');
+      
+      fireEvent.change(input, { target: { value: '100' } });
+      expect(await screen.findByText(/la tarifa debe estar entre 300 y 1000 cop\/kwh/i)).toBeInTheDocument();
+      
+      fireEvent.change(input, { target: { value: '1200' } });
+      expect(await screen.findByText(/la tarifa debe estar entre 300 y 1000 cop\/kwh/i)).toBeInTheDocument();
+    });
 
-  test('calcula correctamente con datos válidos', async () => {
-    renderComponent();
-    
-    fireEvent.change(screen.getByLabelText(/consumo mensual/i), { target: { value: '250' } });
-    fireEvent.change(screen.getByLabelText(/tarifa de energía/i), { target: { value: '454' } });
-    fireEvent.change(screen.getByLabelText(/horas de sol/i), { target: { value: '5' } });
-    fireEvent.change(screen.getByLabelText(/inversión inicial/i), { target: { value: '9500000' } });
-    
-    fireEvent.click(screen.getByRole('button', { name: /calcular/i }));
+    test('muestra error cuando las horas de sol son inválidas', async () => {
+      renderComponent();
+      const input = screen.getByTestId('input-horas-sol');
+      
+      fireEvent.change(input, { target: { value: '-1' } });
+      expect(await screen.findByText(/las horas de sol deben estar entre 0 y 12/i)).toBeInTheDocument();
+      
+      fireEvent.change(input, { target: { value: '15' } });
+      expect(await screen.findByText(/las horas de sol deben estar entre 0 y 12/i)).toBeInTheDocument();
+    });
 
-    await waitFor(() => {
-      expect(screen.getByTestId('resultado-calculo')).toBeInTheDocument();
+    test('muestra error cuando la inversión es inválida', async () => {
+      renderComponent();
+      const input = screen.getByTestId('input-inversion-inicial');
+      
+      fireEvent.change(input, { target: { value: '-1000000' } });
+      expect(await screen.findByText(/la inversión no puede ser negativa/i)).toBeInTheDocument();
     });
   });
 
-  test('reinicia correctamente el formulario', () => {
-    renderComponent();
-    
-    fireEvent.change(screen.getByLabelText(/consumo mensual/i), { target: { value: '250' } });
-    fireEvent.change(screen.getByLabelText(/tarifa de energía/i), { target: { value: '454' } });
-    
-    fireEvent.click(screen.getByRole('button', { name: /reiniciar/i }));
-    
-    expect(screen.getByLabelText(/consumo mensual/i)).toHaveValue(null);
-    expect(screen.getByLabelText(/tarifa de energía/i)).toHaveValue(null);
+  describe('Cálculos y resultados', () => {
+    test('calcula correctamente con datos válidos', async () => {
+      renderComponent();
+      llenarFormulario();
+      
+      const btnCalcular = screen.getByTestId('btn-calcular');
+      fireEvent.click(btnCalcular);
+
+      await waitFor(() => {
+        const resultado = screen.getByTestId('resultado-calculo');
+        expect(resultado).toBeInTheDocument();
+        expect(resultado).toHaveTextContent(/ahorro mensual estimado/i);
+        expect(resultado).toHaveTextContent(/tiempo de recuperación de inversión/i);
+      });
+    });
+
+    test('maneja casos límite en los cálculos', async () => {
+      renderComponent();
+      
+      // Caso límite: valores mínimos permitidos
+      llenarFormulario({
+        'input-consumo-mensual': '1',
+        'input-precio-electricidad': '300',
+        'input-horas-sol': '1',
+        'input-inversion-inicial': '1000000'
+      });
+      
+      const btnCalcular = screen.getByTestId('btn-calcular');
+      fireEvent.click(btnCalcular);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('resultado-calculo')).toBeInTheDocument();
+      });
+
+      // Caso límite: valores máximos permitidos
+      llenarFormulario({
+        'input-consumo-mensual': '5000',
+        'input-precio-electricidad': '1000',
+        'input-horas-sol': '12',
+        'input-inversion-inicial': '100000000'
+      });
+      
+      fireEvent.click(btnCalcular);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('resultado-calculo')).toBeInTheDocument();
+      });
+    });
   });
 
-  test('tiene campos accesibles con descripciones', async () => {
-    renderComponent();
-    
-    expect(screen.getByLabelText(/consumo mensual/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/tarifa de energía/i)).toBeInTheDocument();
-    expect(screen.getByText(/el consumo mensual típico de un hogar/i)).toBeInTheDocument();
-    
-    const input = screen.getByLabelText(/consumo mensual/i);
-    fireEvent.change(input, { target: { value: '-100' } });
-    
-    const error = await screen.findByText(/el consumo debe estar entre 0 y 5000 kwh/i);
-    expect(error).toHaveAttribute('id', 'consumo-error');
-    expect(input).toHaveAttribute('aria-describedby', 'consumo-error');
+  describe('Interfaz y accesibilidad', () => {
+    test('reinicia correctamente el formulario', async () => {
+      renderComponent();
+      llenarFormulario();
+      
+      const btnReiniciar = screen.getByTestId('btn-reiniciar');
+      fireEvent.click(btnReiniciar);
+      
+      const inputIds = [
+        'input-consumo-mensual',
+        'input-precio-electricidad',
+        'input-horas-sol',
+        'input-inversion-inicial'
+      ];
+      
+      inputIds.forEach(id => {
+        expect(screen.getByTestId(id)).toHaveValue(null);
+      });
+
+      expect(screen.queryByTestId('resultado-calculo')).not.toBeInTheDocument();
+    });
+
+    test('tiene campos accesibles con descripciones y validación ARIA', async () => {
+      renderComponent();
+      
+      const input = screen.getByTestId('input-consumo-mensual');
+      expect(input).toHaveAttribute('aria-required', 'true');
+      expect(input).toHaveAttribute('aria-describedby', expect.stringContaining('hint'));
+      
+      fireEvent.change(input, { target: { value: '-100' } });
+      
+      await waitFor(() => {
+        expect(input).toHaveAttribute('aria-invalid', 'true');
+        const error = screen.getByText(/el consumo debe estar entre 0 y 5000 kwh/i);
+        expect(error).toHaveAttribute('role', 'alert');
+      });
+    });
+
+    test('enfoca los resultados después de calcular', async () => {
+      renderComponent();
+      llenarFormulario();
+      
+      const btnCalcular = screen.getByTestId('btn-calcular');
+      fireEvent.click(btnCalcular);
+
+      await waitFor(() => {
+        const resultados = screen.getByTestId('resultado-calculo');
+        expect(resultados).toHaveFocus();
+      });
+    });
   });
 });

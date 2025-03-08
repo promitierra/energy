@@ -16,8 +16,11 @@ const getInitialTheme = (): Theme => {
       return savedTheme;
     }
     
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      return 'dark';
+    if (window.matchMedia && typeof window.matchMedia === 'function') {
+      const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      if (darkModeMediaQuery && darkModeMediaQuery.matches) {
+        return 'dark';
+      }
     }
   }
   return 'light';

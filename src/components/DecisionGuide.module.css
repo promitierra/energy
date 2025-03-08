@@ -1,0 +1,27 @@
+:root {
+  --progress-width: 0%;
+}
+
+.progressBar {
+  width: var(--progress-width);
+  height: 0.5rem;
+  border-radius: 9999px;
+  background-color: #2563eb; /* blue-600 */
+  transition: width 0.3s ease-in-out;
+}
+
+.progressBarContainer {
+  width: 100%;
+  background-color: rgb(229, 231, 235);
+  border-radius: 9999px;
+  height: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+:global(.dark) .progressBarContainer {
+  background-color: rgb(55, 65, 81);
+}
+
+.chartContainer {
+  height: 20rem;
+}

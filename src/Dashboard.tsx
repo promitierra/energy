@@ -1,9 +1,8 @@
 import React, { lazy, Suspense, useState, useCallback, memo, useEffect } from 'react';
 import { useTheme } from './theme/ThemeProvider';
 import SkipLink from './components/ui/skip-link';
-import GraficosComparativos from './graficos-comparativos'; // Importación directa
-
-// Lazy loading solo para componentes secundarios
+// Lazy loading para todos los componentes
+const GraficosComparativos = lazy(() => import('./graficos-comparativos'));
 const SimuladorPersonalizado = lazy(() => import('./components/SimuladorPersonalizado'));
 const DecisionGuide = lazy(() => import('./components/DecisionGuide'));
 
@@ -27,6 +26,7 @@ const Tab = memo(({ isActive, onClick, children, icon }: {
   <button
     role="tab"
     aria-selected={isActive}
+    aria-controls={`panel-${children?.toString().toLowerCase().replace(/\s+/g, '-')}`}
     className={`px-6 py-3 rounded-lg transition-colors flex items-center space-x-2 ${
       isActive 
         ? 'bg-blue-500 text-white shadow-md' 
@@ -34,40 +34,83 @@ const Tab = memo(({ isActive, onClick, children, icon }: {
     }`}
     onClick={onClick}
   >
-    {icon && <span className="text-lg">{icon}</span>}
+    {icon && <span className="text-lg" aria-hidden="true">{icon}</span>}
     <span>{children}</span>
   </button>
 ));
 
 function Dashboard() {
-  const [activeTab, setActiveTab] = useState('graficos');
+  const [activeTab, setActiveTab] = useState(() => {
+    const validTabs = ['graficos', 'simulador', 'decision'];
+    const hash = window.location.hash.replace('#', '');
+    const savedTab = localStorage.getItem('activeTab');
+    
+    // Prioridad: hash URL > localStorage > default
+    if (validTabs.includes(hash)) {
+      localStorage.setItem('activeTab', hash);
+      return hash;
+    } else if (savedTab && validTabs.includes(savedTab)) {
+      window.history.replaceState(null, '', `#${savedTab}`);
+      return savedTab;
+    }
+    
+    const defaultTab = 'graficos';
+    localStorage.setItem('activeTab', defaultTab);
+    window.history.replaceState(null, '', `#${defaultTab}`);
+    return defaultTab;
+  });
+
+  // Sincronizar estado cuando cambia externamente
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent | null) => {
+      const newValue = e ? e.newValue : localStorage.getItem('activeTab');
+      if (newValue && ['graficos', 'simulador', 'decision'].includes(newValue) && newValue !== activeTab) {
+        setActiveTab(newValue);
+        if (!e) { // Si no es un evento de storage, actualizar el hash
+          window.history.replaceState(null, '', `#${newValue}`);
+        }
+      }
+    };
+
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '');
+      if (['graficos', 'simulador', 'decision'].includes(hash) && hash !== activeTab) {
+        setActiveTab(hash);
+        localStorage.setItem('activeTab', hash);
+      }
+    };
+
+    // Verificar el estado actual
+    handleStorageChange(null);
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('hashchange', handleHashChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('hashchange', handleHashChange);
+    };
+  }, [activeTab]);
+
   const { theme, toggleTheme } = useTheme();
   const [isLoading, setIsLoading] = useState(true);
-  
-  // Efecto para simular carga inicial y leer el hash de la URL
+
   useEffect(() => {
-    // Simulación de carga de datos
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 800);
     
-    // Comprobar si hay un hash en la URL para activar una pestaña específica
-    const hash = window.location.hash.replace('#', '');
-    if (['graficos', 'simulador', 'decision'].includes(hash)) {
-      setActiveTab(hash);
-    }
-    
     return () => clearTimeout(timer);
   }, []);
-  
-  // Callbacks memoizados para cambios de tab
-  const handleTabChange = useCallback((tab: string) => {
-    setActiveTab(tab);
-    // Actualizar el hash de la URL sin recargar
-    window.history.replaceState(null, '', `#${tab}`);
-  }, []);
 
-  // Función para obtener título dinámico según la pestaña activa
+  const handleTabChange = useCallback((tab: string) => {
+    if (tab !== activeTab) {
+      setActiveTab(tab);
+      localStorage.setItem('activeTab', tab);
+      window.history.replaceState(null, '', `#${tab}`);
+    }
+  }, [activeTab]);
+
   const getActiveTabTitle = () => {
     switch(activeTab) {
       case 'graficos': 
@@ -83,7 +126,7 @@ function Dashboard() {
 
   return (
     <>
-      <SkipLink />
+      <SkipLink targetId="main-content" />
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
         <header className="bg-white dark:bg-gray-800 shadow-sm">
           <div className="container mx-auto px-4 py-4 flex justify-between items-center">
@@ -133,7 +176,7 @@ function Dashboard() {
             </div>
           </nav>
           
-          <div className="mb-6">
+          <div className="mb-6" role="tabpanel" aria-labelledby={`tab-${activeTab}`}>
             <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-200">
               {getActiveTabTitle()}
             </h2>
@@ -148,20 +191,17 @@ function Dashboard() {
           </div>
           
           <main id="main-content" tabIndex={-1} className="pb-12">
-            {isLoading ? (
-              <LoadingSpinner />
-            ) : (
-              <>
-                {activeTab === 'graficos' && <GraficosComparativos />}
-                
-                {activeTab !== 'graficos' && (
-                  <Suspense fallback={<LoadingSpinner />}>
-                    {activeTab === 'simulador' && <SimuladorPersonalizado />}
-                    {activeTab === 'decision' && <DecisionGuide />}
-                  </Suspense>
-                )}
-              </>
-            )}
+            <div role="tabpanel" id={`panel-${activeTab}`} aria-labelledby={`tab-${activeTab}`}>
+              {isLoading ? (
+                <LoadingSpinner />
+              ) : (
+                <Suspense fallback={<LoadingSpinner />}>
+                  {activeTab === 'graficos' && <GraficosComparativos />}
+                  {activeTab === 'simulador' && <SimuladorPersonalizado />}
+                  {activeTab === 'decision' && <DecisionGuide />}
+                </Suspense>
+              )}
+            </div>
           </main>
         </div>
         

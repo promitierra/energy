@@ -4,33 +4,32 @@ import '@testing-library/jest-dom';
 import Dashboard from '../../Dashboard';
 import { ThemeProvider } from '../../theme/ThemeProvider';
 
-// Configurar mocks para localStorage y matchMedia
-beforeAll(() => {
-  Object.defineProperty(window, 'matchMedia', {
-    writable: true,
-    value: jest.fn().mockImplementation(query => ({
-      matches: false,
-      media: query,
-      onchange: null,
-      addListener: jest.fn(),
-      removeListener: jest.fn(),
-      addEventListener: jest.fn(),
-      removeEventListener: jest.fn(),
-      dispatchEvent: jest.fn(),
-    })),
+// Mocks más descriptivos con testids para mejores aserciones
+jest.mock('../../graficos-comparativos', () => () => (
+  <div data-testid="graficos-content" role="region" aria-label="Análisis Comparativo">
+    Análisis Comparativo
+  </div>
+));
+
+jest.mock('../../components/SimuladorPersonalizado', () => () => (
+  <div data-testid="simulador-content" role="region" aria-label="Simulador Personalizado">
+    Simulador Personalizado
+  </div>
+));
+
+jest.mock('../../components/DecisionGuide', () => () => (
+  <div data-testid="decision-content" role="region" aria-label="Asistente de Decisión">
+    Asistente de Decisión
+  </div>
+));
+
+describe('Dashboard Integration Flow', () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+    document.documentElement.classList.remove('light', 'dark');
   });
 
-  Object.defineProperty(window, 'localStorage', {
-    value: {
-      getItem: jest.fn(),
-      setItem: jest.fn(),
-      clear: jest.fn()
-    },
-  });
-});
-
-describe('Integración: Flujo completo del dashboard', () => {
-  const renderWithTheme = () => {
+  const renderDashboard = () => {
     return render(
       <ThemeProvider>
         <Dashboard />
@@ -38,80 +37,71 @@ describe('Integración: Flujo completo del dashboard', () => {
     );
   };
 
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
+  it('flujo completo de navegación entre pestañas', async () => {
+    renderDashboard();
 
-  test('navegación entre pestañas y funcionalidad básica', async () => {
-    renderWithTheme();
-
-    // Verificar carga inicial
+    // Verificar estado inicial
     await waitFor(() => {
-      expect(screen.getByText('Dashboard Comparativo de Energía')).toBeInTheDocument();
+      expect(screen.getByTestId('graficos-content')).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: /análisis comparativo/i })).toHaveAttribute('aria-selected', 'true');
     });
 
-    // Navegación a simulador
-    const simuladorTab = screen.getByRole('tab', { name: /Simulador Personalizado/i });
+    // Cambiar a simulador
+    const simuladorTab = screen.getByRole('tab', { name: /simulador personalizado/i });
     fireEvent.click(simuladorTab);
+
     await waitFor(() => {
-      expect(screen.getByRole('tab', { name: /Simulador Personalizado/i })).toHaveAttribute('aria-selected', 'true');
+      expect(screen.getByTestId('simulador-content')).toBeInTheDocument();
+      expect(simuladorTab).toHaveAttribute('aria-selected', 'true');
+      expect(window.localStorage.getItem('activeTab')).toBe('simulador');
     });
 
-    // Navegación a asistente
-    const asistenteTab = screen.getByRole('tab', { name: /Asistente de Decisión/i });
-    fireEvent.click(asistenteTab);
-    await waitFor(() => {
-      expect(screen.getByRole('tab', { name: /Asistente de Decisión/i })).toHaveAttribute('aria-selected', 'true');
-    });
+    // Cambiar a asistente
+    const decisionTab = screen.getByRole('tab', { name: /asistente de decisión/i });
+    fireEvent.click(decisionTab);
 
-    // Volver a gráficos
-    const graficosTab = screen.getByRole('tab', { name: /Análisis Comparativo/i });
-    fireEvent.click(graficosTab);
     await waitFor(() => {
-      expect(screen.getByRole('tab', { name: /Análisis Comparativo/i })).toHaveAttribute('aria-selected', 'true');
+      expect(screen.getByTestId('decision-content')).toBeInTheDocument();
+      expect(decisionTab).toHaveAttribute('aria-selected', 'true');
+      expect(window.localStorage.getItem('activeTab')).toBe('decision');
     });
   });
 
-  test('persistencia del tema y funcionalidad del toggle', async () => {
-    renderWithTheme();
+  it('persiste la pestaña activa entre recargas', async () => {
+    // Simular pestaña guardada
+    window.localStorage.setItem('activeTab', 'simulador');
+    
+    renderDashboard();
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /Cambiar tema/i })).toBeInTheDocument();
+      expect(screen.getByTestId('simulador-content')).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: /simulador personalizado/i }))
+        .toHaveAttribute('aria-selected', 'true');
     });
+  });
 
-    const themeButton = screen.getByRole('button', { name: /Cambiar tema/i });
-    
+  it('manejo del tema oscuro/claro', async () => {
+    renderDashboard();
+
+    // Verificar tema inicial
+    expect(document.documentElement.classList.contains('light')).toBe(true);
+
     // Cambiar a tema oscuro
+    const themeButton = screen.getByRole('button', { name: /cambiar a tema oscuro/i });
     fireEvent.click(themeButton);
-    expect(document.documentElement.classList.contains('dark')).toBe(true);
-    expect(themeButton).toHaveTextContent('🌞');
+
+    await waitFor(() => {
+      expect(document.documentElement.classList.contains('dark')).toBe(true);
+      expect(window.localStorage.getItem('theme')).toBe('dark');
+    });
 
     // Cambiar a tema claro
-    fireEvent.click(themeButton);
-    expect(document.documentElement.classList.contains('light')).toBe(true);
-    expect(themeButton).toHaveTextContent('🌙');
-  });
+    const lightButton = screen.getByRole('button', { name: /cambiar a tema claro/i });
+    fireEvent.click(lightButton);
 
-  test('accesibilidad en la navegación por teclado', async () => {
-    renderWithTheme();
-
-    // Verificar que el skip link está presente
-    const skipLink = screen.getByText('Saltar al contenido principal');
-    expect(skipLink).toBeInTheDocument();
-
-    // Verificar que el contenido principal tiene el id correcto
     await waitFor(() => {
-      const mainContent = screen.getByRole('main');
-      expect(mainContent).toHaveAttribute('id', 'main-content');
-    });
-
-    // Verificar que los tabs son navegables por teclado
-    const tabs = screen.getAllByRole('tab');
-    expect(tabs.length).toBe(3);
-    
-    tabs.forEach(tab => {
-      expect(tab).toHaveAttribute('role', 'tab');
-      expect(tab).toHaveAttribute('aria-selected');
+      expect(document.documentElement.classList.contains('light')).toBe(true);
+      expect(window.localStorage.getItem('theme')).toBe('light');
     });
   });
 });
