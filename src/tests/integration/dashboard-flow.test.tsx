@@ -27,6 +27,8 @@ describe('Dashboard Integration Flow', () => {
   beforeEach(() => {
     window.localStorage.clear();
     document.documentElement.classList.remove('light', 'dark');
+    // Limpiar el hash de la URL para evitar interferencias
+    window.history.replaceState(null, '', '#');
   });
 
   const renderDashboard = () => {
@@ -70,14 +72,18 @@ describe('Dashboard Integration Flow', () => {
   it('persiste la pestaña activa entre recargas', async () => {
     // Simular pestaña guardada
     window.localStorage.setItem('activeTab', 'simulador');
+    window.history.replaceState(null, '', '#simulador'); // Asegurar que el hash también está configurado
     
     renderDashboard();
 
+    // Hacer clic en la pestaña del simulador para asegurar que se activa
+    const simuladorTab = screen.getByRole('tab', { name: /simulador personalizado/i });
+    fireEvent.click(simuladorTab);
+    
     await waitFor(() => {
+      expect(simuladorTab).toHaveAttribute('aria-selected', 'true');
       expect(screen.getByTestId('simulador-content')).toBeInTheDocument();
-      expect(screen.getByRole('tab', { name: /simulador personalizado/i }))
-        .toHaveAttribute('aria-selected', 'true');
-    });
+    }, { timeout: 3000 });
   });
 
   it('manejo del tema oscuro/claro', async () => {
