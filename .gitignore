@@ -1,0 +1,4 @@
+# Ignore .snapshots directory
+.snapshots/
+# Ignore node_modules directory
+node_modules/
