@@ -1,0 +1,37 @@
+{
+  "tariffs": [
+    {
+      "name": "Tarifa Base",
+      "type": "fixed",
+      "basePrice": 3.45,
+      "energyPrice": 0.14,
+      "powerPrice": 44.44,
+      "updatedAt": "2024-01-01T00:00:00Z"
+    },
+    {
+      "name": "Tarifa Variable",
+      "type": "variable",
+      "basePrice": 3.45,
+      "energyPrice": 0.12,
+      "powerPrice": 44.44,
+      "timeRanges": [
+        {
+          "startHour": 0,
+          "endHour": 7,
+          "multiplier": 0.8
+        },
+        {
+          "startHour": 8,
+          "endHour": 17,
+          "multiplier": 1.2
+        },
+        {
+          "startHour": 18,
+          "endHour": 23,
+          "multiplier": 1.5
+        }
+      ],
+      "updatedAt": "2024-01-01T00:00:00Z"
+    }
+  ]
+}
