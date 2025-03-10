@@ -8,6 +8,7 @@
     "@types/node": "^20.11.16",
     "@types/react": "^18.2.37",
     "@types/react-dom": "^18.2.15",
+    "pdfmake": "^0.2.18",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-tooltip": "^5.28.0",
