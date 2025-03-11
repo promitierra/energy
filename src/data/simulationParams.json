@@ -1,0 +1,32 @@
+{
+  "initialInvestment": 10000,
+  "systemLifespan": 25,
+  "maintenanceCost": 200,
+  "annualDegradation": 0.5,
+  "energyPriceInflation": 2.5,
+  "financingRate": 4.5,
+  "financingYears": 10,
+  "taxRate": 21,
+  "incentives": [
+    {
+      "name": "Solar Tax Credit",
+      "type": "taxCredit",
+      "amount": 3000,
+      "maxLimit": 5000,
+      "expirationDate": "2025-12-31T23:59:59Z"
+    },
+    {
+      "name": "Local Rebate Program",
+      "type": "rebate",
+      "amount": 1500,
+      "expirationDate": "2024-06-30T23:59:59Z"
+    },
+    {
+      "name": "Green Energy Grant",
+      "type": "grant",
+      "amount": 2000,
+      "maxLimit": 2000
+    }
+  ],
+  "updatedAt": "2024-01-01T00:00:00Z"
+}

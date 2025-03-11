@@ -84,4 +84,4 @@ describe('Tariff Schema Validation', () => {
     const result = tariffSchema.safeParse(invalidTariff);
     expect(result.success).toBe(false);
   });
-}));
+});

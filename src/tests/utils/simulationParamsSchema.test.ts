@@ -89,4 +89,4 @@ describe('Simulation Parameters Schema Validation', () => {
     const result = simulationParamsSchema.safeParse(invalidParams);
     expect(result.success).toBe(false);
   });
-}));
+});

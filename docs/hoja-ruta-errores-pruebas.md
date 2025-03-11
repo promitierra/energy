@@ -244,4 +244,103 @@ Se han resuelto todos los tests del componente DecisionGuide. A continuación se
    // ❌ EVITAR: Selectores por texto que pueden ser frágiles
    screen.getByText(/precio electricidad/i)
    
-   // ✅ USAR:
+   // ✅ USAR: Selectores por data-testid que son más estables
+   screen.getByTestId('precio-electricidad-input')
+   ```
+
+2. **Esperas**:
+   ```tsx
+   // ❌ EVITAR: setTimeout arbitrarios
+   setTimeout(() => {
+     expect(screen.getByText('Cargado')).toBeInTheDocument();
+   }, 1000);
+   
+   // ✅ USAR: waitFor con assertions
+   await waitFor(() => {
+     expect(screen.getByText('Cargado')).toBeInTheDocument();
+   });
+   ```
+
+3. **Mocks**:
+   ```tsx
+   // ❌ EVITAR: Mocks específicos en cada archivo de test
+   beforeEach(() => {
+     window.matchMedia = jest.fn().mockImplementation(query => ({
+       matches: false,
+       // implementación incompleta
+     }));
+   });
+   
+   // ✅ USAR: Mocks globales en setupTests.ts
+   // En setupTests.ts
+   Object.defineProperty(window, 'matchMedia', {
+     writable: true,
+     value: jest.fn().mockImplementation(query => ({
+       matches: false,
+       media: query,
+       onchange: null,
+       addListener: jest.fn(),
+       removeListener: jest.fn(),
+       addEventListener: jest.fn(),
+       removeEventListener: jest.fn(),
+       dispatchEvent: jest.fn(),
+     })),
+   });
+   ```
+
+## Fase 5: Implementación de Tests de Error Boundary y Componentes Integrados 🔄 EN PROGRESO
+
+### Objetivos
+
+1. **Implementar Tests de Error Boundary**
+   - Crear tests que verifiquen el comportamiento de los componentes cuando ocurren errores
+   - Asegurar que los errores se manejen gracefully y no causen fallos en cascada
+   - Verificar que se muestren mensajes de error apropiados al usuario
+
+2. **Mejorar Tests de Integración**
+   - Implementar tests que verifiquen la interacción entre múltiples componentes
+   - Asegurar que los datos fluyan correctamente entre componentes
+   - Verificar que los eventos se propaguen correctamente
+
+3. **Implementar Tests de Rendimiento**
+   - Crear tests que verifiquen el rendimiento de los componentes bajo carga
+   - Asegurar que los componentes se rendericen eficientemente
+   - Verificar que no haya fugas de memoria
+
+### Plan de Implementación
+
+#### 1. Tests de Error Boundary
+
+- **Componentes a testear**:
+  - Dashboard
+  - SimuladorPersonalizado
+  - DecisionGuide
+
+- **Escenarios a testear**:
+  - Error en carga de datos
+  - Error en renderización de componentes
+  - Error en llamadas a API
+
+#### 2. Tests de Integración
+
+- **Flujos a testear**:
+  - Flujo completo de simulación
+  - Flujo de decisión guiada
+  - Flujo de dashboard con cambios de pestaña
+
+- **Interacciones a verificar**:
+  - Cambios de estado entre componentes
+  - Propagación de eventos
+  - Persistencia de datos entre navegaciones
+
+#### 3. Tests de Rendimiento
+
+- **Métricas a evaluar**:
+  - Tiempo de renderización inicial
+  - Tiempo de respuesta a interacciones
+  - Uso de memoria
+
+- **Herramientas a utilizar**:
+  - React Testing Library
+  - Jest Timer Mocks
+  - Performance API

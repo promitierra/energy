@@ -1,0 +1,125 @@
+{
+  "energySources": [
+    {
+      "name": "Solar PV",
+      "type": "renewable",
+      "co2PerKWh": 41,
+      "lifecycleEmissions": 6,
+      "conversionEfficiency": 20,
+      "updatedAt": "2024-01-15T00:00:00Z"
+    },
+    {
+      "name": "Wind",
+      "type": "renewable",
+      "co2PerKWh": 11,
+      "lifecycleEmissions": 4,
+      "conversionEfficiency": 45,
+      "updatedAt": "2024-01-15T00:00:00Z"
+    },
+    {
+      "name": "Natural Gas",
+      "type": "fossil",
+      "co2PerKWh": 490,
+      "lifecycleEmissions": 78,
+      "conversionEfficiency": 60,
+      "updatedAt": "2024-01-15T00:00:00Z"
+    },
+    {
+      "name": "Coal",
+      "type": "fossil",
+      "co2PerKWh": 820,
+      "lifecycleEmissions": 109,
+      "conversionEfficiency": 37,
+      "updatedAt": "2024-01-15T00:00:00Z"
+    },
+    {
+      "name": "Nuclear",
+      "type": "nuclear",
+      "co2PerKWh": 12,
+      "lifecycleEmissions": 16,
+      "conversionEfficiency": 33,
+      "updatedAt": "2024-01-15T00:00:00Z"
+    },
+    {
+      "name": "Biomass",
+      "type": "renewable",
+      "co2PerKWh": 230,
+      "lifecycleEmissions": 45,
+      "conversionEfficiency": 25,
+      "updatedAt": "2024-01-15T00:00:00Z"
+    },
+    {
+      "name": "Hydroelectric",
+      "type": "renewable",
+      "co2PerKWh": 24,
+      "lifecycleEmissions": 3,
+      "conversionEfficiency": 90,
+      "updatedAt": "2024-01-15T00:00:00Z"
+    },
+    {
+      "name": "Solar Thermal + Gas",
+      "type": "hybrid",
+      "co2PerKWh": 170,
+      "lifecycleEmissions": 22,
+      "conversionEfficiency": 55,
+      "updatedAt": "2024-01-15T00:00:00Z"
+    }
+  ],
+  "conversionFactors": [
+    {
+      "fromUnit": "kWh",
+      "toUnit": "MWh",
+      "factor": 0.001,
+      "context": "energy"
+    },
+    {
+      "fromUnit": "MWh",
+      "toUnit": "kWh",
+      "factor": 1000,
+      "context": "energy"
+    },
+    {
+      "fromUnit": "kW",
+      "toUnit": "MW",
+      "factor": 0.001,
+      "context": "power"
+    },
+    {
+      "fromUnit": "MW",
+      "toUnit": "kW",
+      "factor": 1000,
+      "context": "power"
+    },
+    {
+      "fromUnit": "gCO2",
+      "toUnit": "kgCO2",
+      "factor": 0.001,
+      "context": "emissions"
+    },
+    {
+      "fromUnit": "kgCO2",
+      "toUnit": "tCO2",
+      "factor": 0.001,
+      "context": "emissions"
+    },
+    {
+      "fromUnit": "tCO2",
+      "toUnit": "kgCO2",
+      "factor": 1000,
+      "context": "emissions"
+    },
+    {
+      "fromUnit": "BTU",
+      "toUnit": "kWh",
+      "factor": 0.000293071,
+      "context": "energy",
+      "notes": "British Thermal Unit to Kilowatt-hour conversion"
+    },
+    {
+      "fromUnit": "kWh",
+      "toUnit": "BTU",
+      "factor": 3412.14,
+      "context": "energy"
+    }
+  ]
+}
