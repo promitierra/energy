@@ -4,6 +4,7 @@
 // learn more: https://github.com/testing-library/jest-dom
 import '@testing-library/jest-dom';
 import ResizeObserverMock from './tests/__mocks__/resizeObserver';
+import './tests/__mocks__/fileMock';
 
 // Mock ResizeObserver con nuestra implementación mejorada
 window.ResizeObserver = ResizeObserverMock;
@@ -114,7 +115,9 @@ const createLocalStorageMock = () => {
 };
 
 Object.defineProperty(window, 'localStorage', {
-  value: createLocalStorageMock(),
-  writable: true,
-  configurable: true
+  value: createLocalStorageMock()
+});
+
+Object.defineProperty(window, 'sessionStorage', {
+  value: createLocalStorageMock()
 });

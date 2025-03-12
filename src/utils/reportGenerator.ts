@@ -1,5 +1,6 @@
 import pdfMake from 'pdfmake/build/pdfmake';
-import pdfFonts from 'pdfmake/build/vfs_fonts';
+import * as pdfFonts from 'pdfmake/build/vfs_fonts';
+import { TDocumentDefinitions } from 'pdfmake/interfaces';
 
 type ReportData = {
   titulo: string;
@@ -9,15 +10,16 @@ type ReportData = {
   recomendacion: string;
 };
 
-pdfMake.vfs = pdfFonts.pdfMake.vfs;
+// Assign VFS using type assertion to avoid TypeScript errors
+(pdfMake as any).vfs = (pdfFonts as any).vfs;
 
 export const generarReportePDF = (data: ReportData) => {
-  const docDefinition = {
+  const docDefinition: TDocumentDefinitions = {
     content: [
       { text: data.titulo, style: 'header' },
       { text: `Generado para: ${data.usuario}`, margin: [0, 10] },
       { text: 'Escenario actual:', style: 'subheader' },
-      data.escenario,
+      { text: data.escenario },
       { text: 'Comparativa de Costos:', style: 'subheader', margin: [0, 10] },
       {
         table: {
@@ -34,7 +36,7 @@ export const generarReportePDF = (data: ReportData) => {
         }
       },
       { text: 'Recomendación:', style: 'subheader', margin: [0, 10] },
-      data.recomendacion,
+      { text: data.recomendacion },
       { 
         image: 'placeholderChart', 
         width: 400,

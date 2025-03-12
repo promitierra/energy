@@ -5,6 +5,9 @@ import SkipLink from './components/ui/skip-link';
 const GraficosComparativos = lazy(() => import('./graficos-comparativos'));
 const SimuladorPersonalizado = lazy(() => import('./components/SimuladorPersonalizado'));
 const DecisionGuide = lazy(() => import('./components/DecisionGuide'));
+// Nuevos componentes de la Fase 4
+const OcrAnalyzer = lazy(() => import('./features/ocr/OcrAnalyzer'));
+const ValidationComponent = lazy(() => import('./features/validation/ValidationComponent'));
 
 // Componente de carga mejorado
 const LoadingSpinner = memo(() => (
@@ -41,7 +44,7 @@ const Tab = memo(({ isActive, onClick, children, icon }: {
 
 function Dashboard() {
   const [activeTab, setActiveTab] = useState(() => {
-    const validTabs = ['graficos', 'simulador', 'decision'];
+    const validTabs = ['graficos', 'simulador', 'decision', 'ocr', 'validation'];
     const hash = window.location.hash.replace('#', '');
     const savedTab = localStorage.getItem('activeTab');
     
@@ -64,7 +67,7 @@ function Dashboard() {
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent | null) => {
       const newValue = e ? e.newValue : localStorage.getItem('activeTab');
-      if (newValue && ['graficos', 'simulador', 'decision'].includes(newValue) && newValue !== activeTab) {
+      if (newValue && ['graficos', 'simulador', 'decision', 'ocr', 'validation'].includes(newValue) && newValue !== activeTab) {
         setActiveTab(newValue);
         if (!e) { // Si no es un evento de storage, actualizar el hash
           window.history.replaceState(null, '', `#${newValue}`);
@@ -74,7 +77,7 @@ function Dashboard() {
 
     const handleHashChange = () => {
       const hash = window.location.hash.replace('#', '');
-      if (['graficos', 'simulador', 'decision'].includes(hash) && hash !== activeTab) {
+      if (['graficos', 'simulador', 'decision', 'ocr', 'validation'].includes(hash) && hash !== activeTab) {
         setActiveTab(hash);
         localStorage.setItem('activeTab', hash);
       }
@@ -122,6 +125,10 @@ function Dashboard() {
         return 'Simulador Personalizado de Energía Solar';
       case 'decision': 
         return 'Asistente de Toma de Decisiones';
+      case 'ocr':
+        return 'Análisis OCR de Facturas';
+      case 'validation':
+        return 'Validación con Datos Reales';
       default: 
         return 'Dashboard Energético';
     }
@@ -150,6 +157,8 @@ function Dashboard() {
         {activeTab === 'graficos' && <GraficosComparativos />}
         {activeTab === 'simulador' && <SimuladorPersonalizado />}
         {activeTab === 'decision' && <DecisionGuide />}
+        {activeTab === 'ocr' && <OcrAnalyzer />}
+        {activeTab === 'validation' && <ValidationComponent />}
       </Suspense>
     );
   };
@@ -203,6 +212,20 @@ function Dashboard() {
               >
                 Asistente de Decisión
               </Tab>
+              <Tab
+                isActive={activeTab === 'ocr'}
+                onClick={() => handleTabChange('ocr')}
+                icon="📷"
+              >
+                Análisis OCR
+              </Tab>
+              <Tab
+                isActive={activeTab === 'validation'}
+                onClick={() => handleTabChange('validation')}
+                icon="📊"
+              >
+                Validación Datos
+              </Tab>
             </div>
           </nav>
           
@@ -217,6 +240,10 @@ function Dashboard() {
                 'Configure parámetros personalizados para evaluar el potencial de sistemas fotovoltaicos.'}
               {activeTab === 'decision' && 
                 'Responda preguntas sencillas para recibir recomendaciones adaptadas a su situación.'}
+              {activeTab === 'ocr' && 
+                'Analice sus facturas eléctricas mediante reconocimiento óptico de caracteres para extraer datos relevantes.'}
+              {activeTab === 'validation' && 
+                'Compare las predicciones del sistema con datos reales de instalaciones para validar la precisión.'}
             </p>
           </div>
           
