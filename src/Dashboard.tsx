@@ -170,7 +170,7 @@ function Dashboard() {
         <header className="bg-white dark:bg-gray-800 shadow-sm">
           <div className="container mx-auto px-4 py-4 flex justify-between items-center">
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
-              Dashboard Energético
+              Análisis Energético - Fundación ProMiTierra
             </h1>
             <div className="flex items-center space-x-4">
               <button
@@ -258,7 +258,7 @@ function Dashboard() {
           <div className="container mx-auto px-4">
             <div className="flex flex-wrap justify-between items-center">
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Dashboard Comparativo de Energía © 2023
+                Fundación ProMiTierra © 2025 - Todos los derechos reservados
               </p>
               <div className="flex space-x-4">
                 <button 

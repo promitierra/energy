@@ -88,6 +88,27 @@ export interface ValidationComparison {
       actual: number;
     };
   }[];
+  anomalies?: {
+    date: string;
+    metric: string;
+    predicted: number;
+    actual: number;
+    deviation: number;
+    severity: string;
+  }[];
+  dailyComparisons?: {
+    date: string;
+    consumption: {
+      predicted: number;
+      actual: number;
+      deviation: number;
+    };
+    production?: {
+      predicted: number;
+      actual: number;
+      deviation: number;
+    };
+  }[];
 }
 
 /**

@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#000000" />
     <meta
       name="description"
-      content="Web site created using create-react-app"
+      content="Plataforma de análisis energético de la Fundación ProMiTierra"
     />
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
     <!--
@@ -24,10 +24,19 @@
       work correctly both with client-side routing and a non-root public URL.
       Learn how to configure a non-root public URL by running `npm run build`.
     -->
-    <title>React App</title>
+    <title>Análisis Energético - Fundación ProMiTierra</title>
+    <!-- Metadatos adicionales para Colombia -->
+    <meta name="geo.region" content="CO" />
+    <meta name="geo.placename" content="Colombia" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="author" content="Fundación ProMiTierra" />
+    <meta name="copyright" content="© 2023-2025 Fundación ProMiTierra. Todos los derechos reservados." />
+    <!-- Preconectar a recursos importantes -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   </head>
   <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <noscript>Necesita habilitar JavaScript para ejecutar esta aplicación.</noscript>
     <div id="root"></div>
     <!--
       This HTML file is a template.
@@ -39,5 +48,8 @@
       To begin the development, run `npm start` or `yarn start`.
       To create a production bundle, use `npm run build` or `yarn build`.
     -->
+    <footer id="app-footer" style="display:none;">
+      <p>© 2023-2025 Fundación ProMiTierra. Todos los derechos reservados.</p>
+    </footer>
   </body>
 </html>

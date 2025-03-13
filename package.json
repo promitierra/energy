@@ -8,11 +8,13 @@
     "@mui/icons-material": "^5.15.11",
     "@mui/material": "^5.15.11",
     "@testing-library/dom": "^9.3.3",
+    "@types/file-saver": "^2.0.7",
     "@types/jest": "^29.5.12",
     "@types/node": "^20.11.16",
     "@types/pdfmake": "^0.2.11",
     "@types/react": "^18.2.37",
     "@types/react-dom": "^18.2.15",
+    "file-saver": "^2.0.5",
     "pdfmake": "^0.2.18",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -22,7 +24,8 @@
     "serialize-javascript": "^6.0.2",
     "tesseract.js": "^6.0.0",
     "typescript": "^4.9.5",
-    "web-vitals": "^3.5.2"
+    "web-vitals": "^3.5.2",
+    "xlsx": "^0.18.5"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -55,6 +58,7 @@
     "@testing-library/user-event": "^14.5.1",
     "ajv": "^8.17.1",
     "autoprefixer": "^10.4.17",
+    "jest-environment-jsdom": "^29.7.0",
     "nth-check": "^2.1.1",
     "postcss": "^8.5.3",
     "postcss-svgo": "^6.0.0",

@@ -15,7 +15,7 @@ import {
   Cell
 } from 'recharts';
 
-interface FormValues {
+export interface FormValues {
   consumoMensual: string;
   horasSol: string;
   inversionInicial: string;

@@ -42,9 +42,9 @@ const CostosAcumuladosChart = ({ data }: CostosAcumuladosChartProps) => {
           <thead>
             <tr>
               <th scope="col">Año</th>
-              <th scope="col">Red Eléctrica (MXN)</th>
-              <th scope="col">Paneles Solares (MXN)</th>
-              <th scope="col">Generador de Gas (MXN)</th>
+              <th scope="col">Red Eléctrica (COP)</th>
+              <th scope="col">Paneles Solares (COP)</th>
+              <th scope="col">Generador de Gas (COP)</th>
             </tr>
           </thead>
           <tbody>

@@ -14,7 +14,9 @@ import {
   FormControlLabel,
   Alert,
   CircularProgress,
-  Divider
+  Divider,
+  Tabs,
+  Tab
 } from '@mui/material';
 import { 
   LineChart, 
@@ -30,6 +32,8 @@ import {
 } from 'recharts';
 import { InstallationData, ValidationSettings, ValidationComparison } from './types';
 import { compareWithPredictions, generateSampleInstallationData } from './validationUtils';
+import ParameterOptimizationComponent from './ParameterOptimizationComponent';
+import { ParameterSet } from './parameterAdjustment';
 
 /**
  * Component for validating predictions with real installation data
@@ -50,6 +54,12 @@ const ValidationComponent: React.FC = () => {
   
   // State for comparison results
   const [comparisonResult, setComparisonResult] = useState<ValidationComparison | null>(null);
+  
+  // State for UI tabs
+  const [activeTab, setActiveTab] = useState<number>(0);
+  
+  // State for optimized parameters
+  const [optimizedParameters, setOptimizedParameters] = useState<ParameterSet | null>(null);
   
   // Handle file upload for real data
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -107,6 +117,16 @@ const ValidationComponent: React.FC = () => {
       ...prev,
       [setting]: value
     }));
+  };
+  
+  // Handle tab change
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+    setActiveTab(newValue);
+  };
+  
+  // Handle parameter optimization
+  const handleParametersOptimized = (parameters: ParameterSet) => {
+    setOptimizedParameters(parameters);
   };
   
   // Run validation comparison
@@ -198,8 +218,18 @@ const ValidationComponent: React.FC = () => {
         Compare las predicciones del sistema con datos reales de instalaciones para validar la precisión.
       </Typography>
       
-      <Grid container spacing={3}>
-        {/* Data Input Section */}
+      {/* Tabs for different sections */}
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+        <Tabs value={activeTab} onChange={handleTabChange} aria-label="validation tabs">
+          <Tab label="Validación" />
+          <Tab label="Optimización de Parámetros" disabled={!comparisonResult} />
+        </Tabs>
+      </Box>
+      
+      {/* Validation Tab */}
+      {activeTab === 0 && (
+        <Grid container spacing={3}>
+          {/* Data Input Section */}
         <Grid item xs={12} md={6}>
           <Paper variant="outlined" sx={{ p: 2, height: '100%' }}>
             <Typography variant="h6" gutterBottom>Datos de Instalación</Typography>
@@ -528,7 +558,17 @@ const ValidationComponent: React.FC = () => {
             </Paper>
           </Grid>
         )}
-      </Grid>
+        </Grid>
+      )}
+      
+      {/* Parameter Optimization Tab */}
+      {activeTab === 1 && comparisonResult && (
+        <ParameterOptimizationComponent
+          installationData={installationData}
+          validationResult={comparisonResult}
+          onParametersOptimized={handleParametersOptimized}
+        />
+      )}
     </Paper>
   );
 };

@@ -51,9 +51,9 @@ Este documento detalla el plan de desarrollo del Dashboard Comparativo de Energ�
 
 ## Fase 4: Características Avanzadas - 🚀 Prioridad Media (Impacto medio, alta complejidad)
 
-- 🔄 Análisis OCR de facturas de servicios públicos (70% completado)
-- 🔄 Validación con datos reales de instalaciones (65% completado)
-- ✅ Generador de informes PDF
+- 🔄 Análisis OCR de facturas de servicios públicos (90% completado)
+- 🔄 Validación con datos reales de instalaciones (90% completado)
+- ✅ Generador de informes PDF y exportación a Excel
 
 ## Fase 5: Refinamientos - 💡 Prioridad Baja (Bajo impacto, complejidad variable)
 
