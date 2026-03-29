@@ -1,7 +1,10 @@
 import React from 'react';
+import { vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { vi } from 'vitest';
 import '@testing-library/jest-dom';
 import IterationContinueExample from '../components/IterationContinueExample';
+import { vi } from 'vitest';
 
 describe('IterationContinueExample', () => {
   it('muestra el diálogo de confirmación al hacer clic en el botón', () => {
@@ -20,7 +23,7 @@ describe('IterationContinueExample', () => {
 
   it('cierra el diálogo al hacer clic en "Continuar"', () => {
     // Mock para console.log
-    const consoleSpy = jest.spyOn(console, 'log');
+    const consoleSpy = vi.spyOn(console, 'log');
     
     render(<IterationContinueExample />);
     
@@ -41,7 +44,7 @@ describe('IterationContinueExample', () => {
 
   it('cierra el diálogo al hacer clic en "Cancelar"', () => {
     // Mock para console.log
-    const consoleSpy = jest.spyOn(console, 'log');
+    const consoleSpy = vi.spyOn(console, 'log');
     
     render(<IterationContinueExample />);
     

@@ -1,13 +1,17 @@
 import React from 'react';
+import { vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { vi } from 'vitest';
 import ContinueDialog from '../../../components/ui/ContinueDialog';
+import { vi } from 'vitest';
 import { ThemeProvider } from '../../../theme/ThemeProvider';
+import { vi } from 'vitest';
 
 describe('ContinueDialog Component', () => {
   const defaultProps = {
     isOpen: true,
-    onConfirm: jest.fn(),
-    onCancel: jest.fn(),
+    onConfirm: vi.fn(),
+    onCancel: vi.fn(),
     title: "¿Confirmar selección?",
     description: "¿Está seguro de que desea guardar esta selección y continuar?",
     confirmLabel: "Confirmar",
@@ -15,7 +19,7 @@ describe('ContinueDialog Component', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('renderiza correctamente con textos por defecto en español', () => {

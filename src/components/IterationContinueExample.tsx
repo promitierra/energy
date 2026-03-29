@@ -34,7 +34,7 @@ const IterationContinueExample: React.FC = () => {
       {showDialog && (
         <ContinueDialog
           isOpen={showDialog}
-          onClose={handleCancel}
+          onCancel={handleCancel}
           onConfirm={handleContinue}
           title="Confirmación de iteración"
           description="¿Desea continuar con la iteración?"

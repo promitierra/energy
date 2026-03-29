@@ -1,14 +1,9 @@
-// jest-dom adds custom jest matchers for asserting on DOM nodes.
-// allows you to do things like:
-// expect(element).toHaveTextContent(/react/i)
-// learn more: https://github.com/testing-library/jest-dom
 import '@testing-library/jest-dom';
 import ResizeObserverMock from './tests/__mocks__/resizeObserver';
+import { vi } from 'vitest';
 
-// Mock ResizeObserver con nuestra implementación mejorada
 window.ResizeObserver = ResizeObserverMock;
 
-// Mock matchMedia with a more robust implementation
 interface MediaQueryList {
   matches: boolean;
   media: string;
@@ -24,11 +19,11 @@ const createMatchMedia = (matches: boolean): MediaQueryList => ({
   matches,
   media: '(prefers-color-scheme: dark)',
   onchange: null,
-  addListener: jest.fn(),
-  removeListener: jest.fn(),
-  addEventListener: jest.fn(),
-  removeEventListener: jest.fn(),
-  dispatchEvent: jest.fn(() => true),
+  addListener: vi.fn(),
+  removeListener: vi.fn(),
+  addEventListener: vi.fn(),
+  removeEventListener: vi.fn(),
+  dispatchEvent: vi.fn(() => true),
 });
 
 let currentMatches = false;
@@ -37,23 +32,19 @@ const matchMedia = (query: string): MediaQueryList => {
   return createMatchMedia(query === '(prefers-color-scheme: dark)' ? currentMatches : false);
 };
 
-// Use configurable property descriptor
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
   configurable: true,
-  value: jest.fn(matchMedia),
+  value: vi.fn(matchMedia),
 });
 
-// Add helper to change system theme preference in tests
 window.__setPrefersDarkMode = (prefersDark: boolean) => {
   currentMatches = prefersDark;
-  // Update the mock implementation instead of redefining the property
   window.matchMedia.mockImplementation((query: string) => 
     createMatchMedia(query === '(prefers-color-scheme: dark)' ? prefersDark : false)
   );
 };
 
-// Mock localStorage with a properly scoped implementation
 const createLocalStorageMock = () => {
   let store: { [key: string]: string } = {};
 
@@ -63,14 +54,13 @@ const createLocalStorageMock = () => {
     },
     setItem(key: string, value: string): void {
       store[key] = value;
-      // Disparar evento storage para simular cambios
       if (typeof window !== 'undefined') {
         const event = new StorageEvent('storage', {
           key,
           newValue: value,
           oldValue: store[key],
           url: window.location.href,
-          storageArea: null // No necesitamos esto en los tests
+          storageArea: null
         });
         window.dispatchEvent(event);
       }
@@ -78,7 +68,6 @@ const createLocalStorageMock = () => {
     removeItem(key: string): void {
       const oldValue = store[key];
       delete store[key];
-      // Disparar evento storage para simular eliminación
       if (typeof window !== 'undefined') {
         const event = new StorageEvent('storage', {
           key,
@@ -92,7 +81,6 @@ const createLocalStorageMock = () => {
     },
     clear(): void {
       store = {};
-      // Disparar evento storage para simular limpieza
       if (typeof window !== 'undefined') {
         const event = new StorageEvent('storage', {
           key: null,
@@ -118,3 +106,9 @@ Object.defineProperty(window, 'localStorage', {
   writable: true,
   configurable: true
 });
+
+declare global {
+  interface Window {
+    __setPrefersDarkMode: (prefersDark: boolean) => void;
+  }
+}

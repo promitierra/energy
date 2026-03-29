@@ -1,5 +1,7 @@
 import { renderHook, act } from '@testing-library/react';
+import { vi } from 'vitest';
 import { useChartPreloader, chartComponents } from '../../hooks/useChartPreloader';
+import { vi } from 'vitest';
 
 // Mock directo de los imports dinámicos
 // Estos son mocks más simples que se resolverán correctamente en los tests
@@ -12,14 +14,14 @@ const mockComponents = {
 };
 
 // Mock de dataCompression
-jest.mock('../../utils/dataCompression', () => ({
-  compressChartData: jest.fn(data => data),
-  decompressChartData: jest.fn(data => data)
+vi.mock('../../utils/dataCompression', () => ({
+  compressChartData: vi.fn(data => data),
+  decompressChartData: vi.fn(data => data)
 }));
 
 describe('useChartPreloader', () => {
   let originalReadyState: string;
-  let originalConsoleWarn: jest.SpyInstance;
+  let originalConsoleWarn: vi.SpyInstance;
   let originalChartComponents: typeof chartComponents;
 
   beforeAll(() => {
@@ -30,11 +32,11 @@ describe('useChartPreloader', () => {
   });
 
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     // Reset estado global
     window.preloadingStarted = false;
     // Silenciar warnings en los tests
-    originalConsoleWarn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    originalConsoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     
     // Establecer documento como completo
     Object.defineProperty(document, 'readyState', {
@@ -45,12 +47,12 @@ describe('useChartPreloader', () => {
     // Reemplazar las funciones de importación con mocks que siempre se resuelven
     chartComponents.forEach((component, index) => {
       const componentName = Object.keys(mockComponents)[index];
-      chartComponents[index].importFn = jest.fn().mockResolvedValue(mockComponents[componentName]);
+      chartComponents[index].importFn = vi.fn().mockResolvedValue(mockComponents[componentName]);
     });
   });
 
   afterEach(() => {
-    jest.useRealTimers();
+    vi.useRealTimers();
     originalConsoleWarn.mockRestore();
   });
 
@@ -85,7 +87,7 @@ describe('useChartPreloader', () => {
     // Simular el paso del tiempo y resolución de promesas
     await act(async () => {
       // Ejecutar el temporizador inicial
-      jest.advanceTimersByTime(20);
+      vi.advanceTimersByTime(20);
       await Promise.resolve();
     });
 
@@ -101,7 +103,7 @@ describe('useChartPreloader', () => {
     const { result } = renderHook(() => useChartPreloader());
 
     await act(async () => {
-      jest.advanceTimersByTime(20);
+      vi.advanceTimersByTime(20);
       await Promise.resolve();
     });
 
@@ -126,12 +128,12 @@ describe('useChartPreloader', () => {
 
   it('debería manejar errores de carga gracefully', async () => {
     // Causar un error en una de las cargas
-    chartComponents[0].importFn = jest.fn().mockRejectedValue(new Error('Error simulado'));
+    chartComponents[0].importFn = vi.fn().mockRejectedValue(new Error('Error simulado'));
     
     const { result } = renderHook(() => useChartPreloader());
 
     await act(async () => {
-      jest.advanceTimersByTime(20);
+      vi.advanceTimersByTime(20);
       await Promise.resolve();
     });
 

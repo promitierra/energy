@@ -1,8 +1,12 @@
 import React from 'react';
+import { vi } from 'vitest';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { vi } from 'vitest';
 import '@testing-library/jest-dom';
 import DecisionGuide from '../components/DecisionGuide';
+import { vi } from 'vitest';
 import { ThemeProvider } from '../theme/ThemeProvider';
+import { vi } from 'vitest';
 
 describe('DecisionGuide Component', () => {
   const renderWithTheme = () => {
@@ -15,7 +19,7 @@ describe('DecisionGuide Component', () => {
 
   beforeEach(() => {
     window.localStorage.clear();
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('Pantalla inicial', () => {

@@ -1,7 +1,10 @@
 import React from 'react';
+import { vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { vi } from 'vitest';
 import '@testing-library/jest-dom';
 import ChartErrorBoundary from '../../../components/ui/ChartErrorBoundary';
+import { vi } from 'vitest';
 
 // Componente que lanza un error controlado
 const ThrowError = ({ message = 'Test error' }) => {
@@ -12,7 +15,7 @@ describe('ChartErrorBoundary', () => {
   const originalError = console.error;
   
   beforeAll(() => {
-    console.error = jest.fn();
+    console.error = vi.fn();
   });
 
   afterAll(() => {
@@ -20,7 +23,7 @@ describe('ChartErrorBoundary', () => {
   });
 
   beforeEach(() => {
-    (console.error as jest.Mock).mockClear();
+    (console.error as vi.Mock).mockClear();
   });
 
   it('renderiza el contenido cuando no hay error', () => {
@@ -46,7 +49,7 @@ describe('ChartErrorBoundary', () => {
   });
 
   it('permite reintentar cargar el gráfico', () => {
-    const onReset = jest.fn();
+    const onReset = vi.fn();
     
     render(
       <ChartErrorBoundary chartName="Test Chart" onReset={onReset}>

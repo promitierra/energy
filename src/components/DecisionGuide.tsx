@@ -469,8 +469,8 @@ const DecisionGuide: React.FC = () => {
                   role="progressbar"
                   aria-label="Progreso del cuestionario"
                   aria-valuenow={Math.floor((paso / preguntas.length) * 100)}
-                  aria-valuemin="0"
-                  aria-valuemax="100"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
                 >
                   <style>
                     {`:root { --progress-width: ${Math.floor((paso / preguntas.length) * 100)}%; }`}

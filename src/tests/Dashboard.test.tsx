@@ -1,12 +1,16 @@
 import React from 'react';
+import { vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { vi } from 'vitest';
 import '@testing-library/jest-dom';
 import Dashboard from '../Dashboard';
+import { vi } from 'vitest';
 import ThemeProvider from '../theme/ThemeProvider';
+import { vi } from 'vitest';
 
-jest.mock('../graficos-comparativos', () => () => <div data-testid="graficos-mock">Análisis Comparativo</div>);
-jest.mock('../components/SimuladorPersonalizado', () => () => <div data-testid="simulador-mock">Simulador Personalizado</div>);
-jest.mock('../components/DecisionGuide', () => () => <div data-testid="decision-mock">Asistente de Decisión</div>);
+vi.mock('../graficos-comparativos', () => () => <div data-testid="graficos-mock">Análisis Comparativo</div>);
+vi.mock('../components/SimuladorPersonalizado', () => () => <div data-testid="simulador-mock">Simulador Personalizado</div>);
+vi.mock('../components/DecisionGuide', () => () => <div data-testid="decision-mock">Asistente de Decisión</div>);
 
 describe('Dashboard Component', () => {
   const renderWithTheme = () => {
