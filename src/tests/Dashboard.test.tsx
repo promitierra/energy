@@ -1,16 +1,13 @@
 import React from 'react';
 import { vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { vi } from 'vitest';
 import '@testing-library/jest-dom';
 import Dashboard from '../Dashboard';
-import { vi } from 'vitest';
 import ThemeProvider from '../theme/ThemeProvider';
-import { vi } from 'vitest';
 
-vi.mock('../graficos-comparativos', () => () => <div data-testid="graficos-mock">Análisis Comparativo</div>);
-vi.mock('../components/SimuladorPersonalizado', () => () => <div data-testid="simulador-mock">Simulador Personalizado</div>);
-vi.mock('../components/DecisionGuide', () => () => <div data-testid="decision-mock">Asistente de Decisión</div>);
+vi.mock('../graficos-comparativos', () => ({ default: () => <div data-testid="graficos-mock">Análisis Comparativo</div> }));
+vi.mock('../components/SimuladorPersonalizado', () => ({ default: () => <div data-testid="simulador-mock">Simulador Personalizado</div> }));
+vi.mock('../components/DecisionGuide', () => ({ default: () => <div data-testid="decision-mock">Asistente de Decisión</div> }));
 
 describe('Dashboard Component', () => {
   const renderWithTheme = () => {
@@ -67,7 +64,7 @@ describe('Dashboard Component', () => {
     await waitFor(() => {
       const asistenteTab = screen.getByRole('tab', { name: /asistente de decisión/i });
       expect(asistenteTab).toHaveAttribute('aria-selected', 'true');
-      expect(screen.getByText(/Asistente de Decisión/)).toBeInTheDocument();
+      expect(screen.getByTestId('decision-mock')).toBeInTheDocument();
     });
   });
 
@@ -86,6 +83,18 @@ describe('Dashboard Component', () => {
       expect(simuladorTab).toHaveAttribute('aria-selected', 'true');
       expect(screen.getByTestId('simulador-mock')).toBeInTheDocument();
     });
+  });
+
+  test('asocia cada pestaña activa con un único panel con nombre accesible', () => {
+    renderWithTheme();
+
+    for (const tab of screen.getAllByRole('tab')) {
+      fireEvent.click(tab);
+      const panel = screen.getByRole('tabpanel', { name: tab.querySelector('span:last-child')!.textContent! });
+      expect(tab).toHaveAttribute('aria-controls', panel.id);
+      expect(panel).toHaveAttribute('aria-labelledby', tab.id);
+      expect(tab).toHaveAttribute('aria-selected', 'true');
+    }
   });
 
   test('cambia el tema correctamente', async () => {

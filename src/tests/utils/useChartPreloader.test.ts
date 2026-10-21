@@ -1,7 +1,6 @@
 import { renderHook, act } from '@testing-library/react';
 import { vi } from 'vitest';
 import { useChartPreloader, chartComponents } from '../../hooks/useChartPreloader';
-import { vi } from 'vitest';
 
 // Mock directo de los imports dinámicos
 // Estos son mocks más simples que se resolverán correctamente en los tests

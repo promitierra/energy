@@ -249,11 +249,14 @@ const recomendaciones: Record<string, Recomendacion> = {
 const DecisionGuide: React.FC = () => {
   const [paso, setPaso] = useState(0);
   const [respuestas, setRespuestas] = useState<number[]>([]);
-  const [puntajes, setPuntajes] = useState({
-    redElectrica: 0,
-    panelesSolares: 0,
-    generadorGas: 0
-  });
+  const puntajes = useMemo(() => respuestas.reduce((total, opcionIndex, preguntaIndex) => {
+    const puntos = preguntas[preguntaIndex].opciones[opcionIndex].puntaje;
+    return {
+      redElectrica: total.redElectrica + puntos.redElectrica,
+      panelesSolares: total.panelesSolares + puntos.panelesSolares,
+      generadorGas: total.generadorGas + puntos.generadorGas
+    };
+  }, { redElectrica: 0, panelesSolares: 0, generadorGas: 0 }), [respuestas]);
   const [showDialog, setShowDialog] = useState(false);
   const [pendingSelection, setPendingSelection] = useState<{ paso: number; opcion: number } | null>(null);
   // Estado para anuncios de accesibilidad
@@ -282,17 +285,6 @@ const DecisionGuide: React.FC = () => {
     }
   }, [paso]);
 
-  const actualizarPuntajes = useCallback((preguntaIndex: number, opcionIndex: number) => {
-    setPuntajes(prev => {
-      const puntajeOpcion = preguntas[preguntaIndex].opciones[opcionIndex].puntaje;
-      return {
-        redElectrica: prev.redElectrica + puntajeOpcion.redElectrica,
-        panelesSolares: prev.panelesSolares + puntajeOpcion.panelesSolares,
-        generadorGas: prev.generadorGas + puntajeOpcion.generadorGas
-      };
-    });
-  }, []);
-
   // Manejar selección de respuesta
   const handleSeleccion = useCallback((pasoActual: number, opcionIndex: number) => {
     setRespuestas(prev => {
@@ -301,7 +293,6 @@ const DecisionGuide: React.FC = () => {
       return newRespuestas;
     });
     
-    actualizarPuntajes(pasoActual, opcionIndex);
     
     // Avanzar directamente al siguiente paso
     setPaso(p => p + 1);
@@ -310,7 +301,7 @@ const DecisionGuide: React.FC = () => {
     } else {
       setAnnouncement(`Avanzando a la pregunta ${pasoActual + 2} de ${preguntas.length}`);
     }
-  }, [actualizarPuntajes, preguntas.length]);
+  }, []);
 
   // Teclado: mover entre opciones con flechas
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>, currentPaso: number) => {
@@ -382,11 +373,6 @@ const DecisionGuide: React.FC = () => {
   const reiniciarAsistente = useCallback(() => {
     setPaso(0);
     setRespuestas([]);
-    setPuntajes({
-      redElectrica: 0,
-      panelesSolares: 0,
-      generadorGas: 0
-    });
     setAnnouncement('Asistente reiniciado. Volviendo a la pantalla inicial.');
   }, []);
 

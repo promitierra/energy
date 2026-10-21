@@ -1,9 +1,7 @@
 import React from 'react';
 import { vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { vi } from 'vitest';
 import { ThemeProvider, useTheme } from '../theme/ThemeProvider';
-import { vi } from 'vitest';
 
 // Test component
 const TestComponent = () => {

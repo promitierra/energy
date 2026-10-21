@@ -1,12 +1,9 @@
 import React from 'react';
 import { vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { vi } from 'vitest';
 import '@testing-library/jest-dom';
 import ContinueDialog from '../components/ui/ContinueDialog';
-import { vi } from 'vitest';
 import { ThemeProvider } from '../theme/ThemeProvider';
-import { vi } from 'vitest';
 
 describe('ContinueDialog', () => {
   const defaultProps = {

@@ -17,16 +17,18 @@ const LoadingSpinner = memo(() => (
 ));
 
 // Componente de tab mejorado con indicadores
-const Tab = memo(({ isActive, onClick, children, icon }: { 
+const Tab = memo(({ tabId, isActive, onClick, children, icon }: {
+  tabId: string;
   isActive: boolean; 
   onClick: () => void; 
   children: React.ReactNode;
   icon?: string;
 }) => (
   <button
+    id={`tab-${tabId}`}
     role="tab"
     aria-selected={isActive}
-    aria-controls={`panel-${children?.toString().toLowerCase().replace(/\s+/g, '-')}`}
+    aria-controls={`panel-${tabId}`}
     className={`px-6 py-3 rounded-lg transition-colors flex items-center space-x-2 ${
       isActive 
         ? 'bg-blue-500 text-white shadow-md' 
@@ -153,6 +155,7 @@ function Dashboard() {
               aria-label="Secciones principales"
             >
               <Tab
+                tabId="graficos"
                 isActive={activeTab === 'graficos'}
                 onClick={() => handleTabChange('graficos')}
                 icon="📊"
@@ -160,6 +163,7 @@ function Dashboard() {
                 Análisis Comparativo
               </Tab>
               <Tab
+                tabId="simulador"
                 isActive={activeTab === 'simulador'}
                 onClick={() => handleTabChange('simulador')}
                 icon="🔍"
@@ -167,6 +171,7 @@ function Dashboard() {
                 Simulador Personalizado
               </Tab>
               <Tab
+                tabId="decision"
                 isActive={activeTab === 'decision'}
                 onClick={() => handleTabChange('decision')}
                 icon="🧠"
@@ -176,7 +181,7 @@ function Dashboard() {
             </div>
           </nav>
           
-          <div className="mb-6" role="tabpanel" aria-labelledby={`tab-${activeTab}`}>
+          <div className="mb-6">
             <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-200">
               {getActiveTabTitle()}
             </h2>

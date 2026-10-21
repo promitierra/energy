@@ -1,6 +1,5 @@
 # Ignore .snapshots directory
 .snapshots/
 # Ignore node_modules directory
-node_modules/build/
+build/
 node_modules/
-package-lock.json

@@ -1,12 +1,9 @@
 import React from 'react';
 import { vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { vi } from 'vitest';
 import '@testing-library/jest-dom';
 import SimuladorPersonalizado from '../components/SimuladorPersonalizado';
-import { vi } from 'vitest';
 import { ThemeProvider } from '../theme/ThemeProvider';
-import { vi } from 'vitest';
 
 describe('SimuladorPersonalizado', () => {
   const renderComponent = () => {

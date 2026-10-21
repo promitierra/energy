@@ -15,7 +15,8 @@ Este proyecto proporciona un dashboard interactivo para comparar diferentes alte
 - React con TypeScript
 - Recharts para visualizaciones de datos
 - Tailwind CSS para los estilos
-- Jest y React Testing Library para pruebas
+- Vite para desarrollo y compilación
+- Vitest y React Testing Library para pruebas
 
 ## Estructura del proyecto
 ```
@@ -45,24 +46,25 @@ energy-dashboard/
 ```
 
 ## Instalación y configuración
-1. Clona el repositorio:
+
+Requiere Node.js `^20.19.0 || >=22.12.0` (se recomienda Node 22) y npm 11.
+La instalación se verificó con Node 22/npm 11; npm 9 y 10 presentaron un error
+interno del resolvedor de dependencias (`edgesOut`) al actualizar el lockfile.
+Desde el directorio del repositorio:
+
+```bash
+npm ci
+npm run dev
 ```
-git clone https://github.com/usuario/energy-dashboard.git
-cd energy-dashboard
+
+El servidor abre http://localhost:3000. Para compilar y previsualizar:
+
+```bash
+npm run build
+npm run preview
 ```
-2. Instala las dependencias:
-```
-npm install
-```
-3. Inicia el servidor de desarrollo:
-```
-npm start
-```
-4. Abre http://localhost:3000 en tu navegador
-5. Para ejecutar las pruebas:
-```
-npm test
-```
+
+La compilación ejecuta TypeScript y Vite y genera `build/`.
 
 ## Testing con Recharts, ThemeProvider y Formularios
 Este proyecto incluye tests para diferentes tipos de componentes: gráficos con Recharts, componentes que dependen del tema, y formularios interactivos. Para lograr un correcto funcionamiento de los tests, se implementó:
@@ -79,20 +81,16 @@ Los componentes que manejan el tema dependen de window.matchMedia. Se implement�
 ### 3. Mock de localStorage
 Se implementó un mock de localStorage que:
 - Mantiene un almacenamiento persistente durante la sesión de test
-- Se limpia automáticamente entre tests
+- Se limpia en los tests que requieren aislamiento
 - Simula correctamente todos los métodos del API de localStorage
 
 ### 4. Patrones de Testing Establecidos
 
 #### A. Selectores en Tests
-Para asegurar tests robustos y mantenibles:
-```tsx
-// ❌ NO RECOMENDADO: Selectores frágiles por texto
-const input = screen.getByLabelText(/precio electricidad/i);
 
-// ✅ RECOMENDADO: Uso de data-testid
-const input = screen.getByTestId('input-precio-electricidad');
-```
+Preferir roles y nombres accesibles (`getByRole`, `getByLabelText`) para
+comprobar la interfaz que percibe el usuario. Utilizar `data-testid` cuando no
+haya un selector semántico adecuado.
 
 #### B. Accesibilidad y Testing
 Los componentes implementan atributos ARIA que mejoran tanto la accesibilidad como la testeabilidad:
@@ -210,55 +208,37 @@ La configuración global de los tests se encuentra en `src/setupTests.ts`. Este 
 
 ### 7. Ejecución de Tests
 
-Para ejecutar todos los tests:
 ```bash
+# Ejecución completa, sin modo interactivo
+npm test -- --run
+
+# Pruebas de un archivo
+npm test -- --run src/tests/ThemeProvider.test.tsx
+
+# Modo interactivo de Vitest
 npm test
 ```
 
-Para ejecutar tests específicos:
-```bash
-# Ejecutar tests de un componente específico
-npm test -- --testPathPattern=RetornoInversionChart
+La configuración activa está en `vite.config.ts`; `jest.config.js` es un
+archivo heredado y no se usa con estos comandos. Los resultados y las tareas
+pendientes se mantienen en [el roadmap de pruebas](docs/test-errors-roadmap.md).
 
-# Ejecutar tests relacionados con el tema
-npm test -- --testPathPattern=ThemeProvider
+## Estado y roadmap
 
-# Ejecutar solo los tests que han fallado
-npm test -- --onlyFailures
-```
+Implementados: las tres secciones del dashboard, cinco gráficos comparativos,
+entrada de consumo y tarifa, cálculo solar personalizado, recomendaciones
+basadas en preguntas, tema persistente, carga diferida y pruebas unitarias y
+de integración del dashboard. Las comparativas usan datos definidos en el
+código; no incluyen tarifas ni precios de equipos en tiempo real.
 
-## Roadmap de desarrollo
-### Fase 1: Fundamentos Esenciales - 🎯 Prioridad Alta (Alto impacto, baja complejidad)
-- ✅ Implementar simulador personalizado de escenarios básico
-- ✅ Crear visualización simple de costos acumulados
-- 🔄 Implementar entrada de datos básicos del usuario (consumo, tarifa)
-- 🔄 Integrar datos históricos de tarifas eléctricas
-### Fase 2: Funcionalidades Core - 🎯 Prioridad Alta (Alto impacto, complejidad media)
-- ✅ Mejorar asistente de toma de decisiones
-- ✅ Ampliar análisis de retorno de inversión
-- 🔄 Implementar sistema de recomendaciones básico
-- 🔄 Añadir comparativas de emisiones CO₂
-- 🔄 Crear calculadora básica de dimensionamiento
-### Fase 3: Optimización y Precisión - 📊 Prioridad Media (Impacto medio, complejidad media)
-- 🔜 Refinamiento de modelos predictivos
-- 🔜 Implementar tracking de precios de equipos
-- 🔜 Mejorar precisión de cálculos con datos reales
-- 🔜 Añadir análisis de sensibilidad avanzado
-- 🔄 Integrar datos climáticos por región
-### Fase 3.1: Mejoras en Testing - 🧪 Prioridad Alta (Para estabilidad del proyecto)
-- ✅ Resolver problemas con tests de componentes Recharts
-- 🔄 Mejorar los mocks para servicios externos
-- 🔄 Implementar tests de integración más completos
-- 🔜 Establecer un pipeline de CI/CD para pruebas automáticas
-### Fase 4: Características Avanzadas - 🚀 Prioridad Media (Impacto medio, alta complejidad)
-- 📅 Análisis OCR de facturas
-- 📅 Validación con datos reales de instalaciones
-- 📅 Sistema de machine learning para predicciones
-- 📅 Integración con APIs de proveedores
-### Fase 5: Refinamientos - 💡 Prioridad Baja (Bajo impacto, complejidad variable)
-- 📅 Personalización avanzada de interfaz
-- 📅 Módulo de reportes personalizados
-- 📅 Comparativas regionales avanzadas
+El foco actual es estabilizar las pruebas y validar accesibilidad y rendimiento.
+El detalle está en [Fase 3](docs/fase3-desarrollo.md).
+
+Quedan como evolución futura la integración de tarifas y clima por región,
+validación con instalaciones reales, seguimiento de precios, OCR de facturas,
+reportes personalizados e integración con proveedores. Estas capacidades no
+están implementadas. Las respuestas del asistente se conservan durante su uso,
+pero se reinician al desmontarlo o recargar la página.
 
 ## Uso
 El dashboard ofrece tres secciones principales:

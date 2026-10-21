@@ -1,10 +1,8 @@
 import React from 'react';
 import { vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { vi } from 'vitest';
 import '@testing-library/jest-dom';
 import ChartErrorBoundary from '../../../components/ui/ChartErrorBoundary';
-import { vi } from 'vitest';
 
 // Componente que lanza un error controlado
 const ThrowError = ({ message = 'Test error' }) => {

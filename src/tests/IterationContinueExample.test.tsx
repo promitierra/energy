@@ -1,10 +1,8 @@
 import React from 'react';
 import { vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { vi } from 'vitest';
 import '@testing-library/jest-dom';
 import IterationContinueExample from '../components/IterationContinueExample';
-import { vi } from 'vitest';
 
 describe('IterationContinueExample', () => {
   it('muestra el diálogo de confirmación al hacer clic en el botón', () => {

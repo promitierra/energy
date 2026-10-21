@@ -1,190 +1,116 @@
 import React from 'react';
-import { vi } from 'vitest';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
-import { vi } from 'vitest';
-import '@testing-library/jest-dom';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import DecisionGuide from '../components/DecisionGuide';
-import { vi } from 'vitest';
 import { ThemeProvider } from '../theme/ThemeProvider';
-import { vi } from 'vitest';
 
-describe('DecisionGuide Component', () => {
-  const renderWithTheme = () => {
-    return render(
-      <ThemeProvider>
-        <DecisionGuide />
-      </ThemeProvider>
-    );
-  };
+const renderGuide = () => render(<ThemeProvider><DecisionGuide /></ThemeProvider>);
+const start = () => fireEvent.click(screen.getByRole('button', { name: /iniciar el asistente de decisión/i }));
+const answer = (index = 0) => fireEvent.click(screen.getAllByRole('radio')[index]);
+const finish = (firstQuestion = 1) => {
+  for (let question = firstQuestion; question <= 7; question++) {
+    expect(screen.getByRole('form', { name: `Pregunta ${question} de 7` })).toBeInTheDocument();
+    answer();
+  }
+  return screen.getByRole('region', { name: 'Resultados del asistente' });
+};
+const compatibility = () => within(screen.getByRole('region', { name: 'Resultados del asistente' }))
+  .getAllByText(/% de compatibilidad$/).map(item => item.textContent);
 
-  beforeEach(() => {
-    window.localStorage.clear();
-    vi.clearAllMocks();
+describe('DecisionGuide', () => {
+  beforeEach(() => window.localStorage.clear());
+
+  test('muestra la introducción y enfoca el botón de inicio', () => {
+    renderGuide();
+    expect(screen.getByRole('heading', { name: /asistente de toma de decisiones/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /iniciar el asistente de decisión/i })).toHaveFocus();
   });
 
-  describe('Pantalla inicial', () => {
-    test('renderiza correctamente la pantalla inicial', async () => {
-      renderWithTheme();
-      
-      await waitFor(() => {
-        expect(screen.getByRole('heading', { name: /asistente de toma de decisiones/i })).toBeInTheDocument();
-        expect(screen.getByText(/te ayudamos a elegir la mejor alternativa energética/i)).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: /iniciar el asistente de decisión/i })).toBeEnabled();
-      });
-    });
-
-    test('persiste el estado del asistente', async () => {
-      // Simular estado guardado
-      window.localStorage.setItem('decisionGuideState', JSON.stringify({
-        currentStep: 2,
-        answers: ['300-500', 'menos-5m']
-      }));
-
-      renderWithTheme();
-
-      await waitFor(() => {
-        expect(screen.getByText(/¿cuál es su presupuesto disponible/i)).toBeInTheDocument();
-      });
-    });
+  test('inicia una evaluación nueva al volver a montar el asistente', () => {
+    const { unmount } = renderGuide();
+    start();
+    answer();
+    expect(screen.getByRole('form', { name: 'Pregunta 2 de 7' })).toBeInTheDocument();
+    unmount();
+    renderGuide();
+    start();
+    expect(screen.getByRole('form', { name: 'Pregunta 1 de 7' })).toBeInTheDocument();
+    expect(screen.queryByRole('radio', { checked: true })).not.toBeInTheDocument();
   });
 
-  describe('Navegación entre pasos', () => {
-    const avanzarPaso = async () => {
-      const radioInputs = await screen.findAllByRole('radio');
-      fireEvent.click(radioInputs[0]);
-      
-      const confirmButton = await screen.findByRole('button', { name: /continuar/i });
-      fireEvent.click(confirmButton);
-    };
-
-    test('permite navegar hacia adelante y atrás', async () => {
-      renderWithTheme();
-      
-      // Iniciar asistente
-      fireEvent.click(screen.getByRole('button', { name: /iniciar el asistente de decisión/i }));
-      
-      // Verificar primer paso
-      await waitFor(() => {
-        expect(screen.getByText(/¿cuál es su consumo mensual promedio/i)).toBeInTheDocument();
-      });
-
-      // Avanzar al segundo paso
-      await avanzarPaso();
-
-      // Verificar segundo paso
-      await waitFor(() => {
-        expect(screen.getByText(/¿cuál es su presupuesto disponible/i)).toBeInTheDocument();
-      });
-
-      // Retroceder al primer paso
-      fireEvent.click(screen.getByRole('button', { name: /anterior/i }));
-
-      await waitFor(() => {
-        expect(screen.getByText(/¿cuál es su consumo mensual promedio/i)).toBeInTheDocument();
-      });
-    });
-
-    test('mantiene las respuestas al navegar entre pasos', async () => {
-      renderWithTheme();
-      
-      // Iniciar y responder primera pregunta
-      fireEvent.click(screen.getByRole('button', { name: /iniciar el asistente de decisión/i }));
-      await avanzarPaso();
-      
-      // Ir al paso anterior y verificar que la respuesta se mantiene
-      fireEvent.click(screen.getByRole('button', { name: /anterior/i }));
-      
-      await waitFor(() => {
-        const radioGroup = screen.getByRole('radiogroup');
-        const selectedOption = within(radioGroup).getByRole('radio', { checked: true });
-        expect(selectedOption).toBeInTheDocument();
-      });
-    });
+  test('avanza automáticamente y permite volver a la pregunta anterior', () => {
+    renderGuide();
+    start();
+    expect(screen.getByRole('heading', { name: /cuál es su consumo mensual promedio/i })).toBeInTheDocument();
+    answer();
+    expect(screen.getByRole('heading', { name: /cuál es su presupuesto inicial disponible/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /regresar a la pregunta anterior/i }));
+    expect(screen.getByRole('form', { name: 'Pregunta 1 de 7' })).toBeInTheDocument();
   });
 
-  describe('Validación y manejo de errores', () => {
-    test('requiere selección antes de continuar', async () => {
-      renderWithTheme();
-      
-      // Iniciar asistente
-      fireEvent.click(screen.getByRole('button', { name: /iniciar el asistente de decisión/i }));
-      
-      // Intentar continuar sin selección
-      const confirmButton = await screen.findByRole('button', { name: /continuar/i });
-      fireEvent.click(confirmButton);
-      
-      await waitFor(() => {
-        expect(screen.getByText(/por favor seleccione una opción/i)).toBeInTheDocument();
-      });
-    });
-
-    test('maneja errores de carga de estado', async () => {
-      // Simular estado inválido
-      window.localStorage.setItem('decisionGuideState', 'invalid-json');
-      
-      renderWithTheme();
-      
-      await waitFor(() => {
-        expect(screen.getByRole('heading', { name: /asistente de toma de decisiones/i })).toBeInTheDocument();
-      });
-    });
+  test('conserva la selección al volver y permite avanzar sin cambiarla', () => {
+    renderGuide();
+    start();
+    answer(1);
+    fireEvent.click(screen.getByRole('button', { name: /regresar a la pregunta anterior/i }));
+    expect(screen.getByRole('radio', { name: 'Medio (150-300 kWh)' })).toBeChecked();
+    fireEvent.click(screen.getByRole('button', { name: /siguiente pregunta/i }));
+    expect(screen.getByRole('form', { name: 'Pregunta 2 de 7' })).toBeInTheDocument();
   });
 
-  describe('Resultados y reinicio', () => {
-    const completarPreguntas = async () => {
-      // Iniciar asistente
-      fireEvent.click(screen.getByRole('button', { name: /iniciar el asistente de decisión/i }));
+  test('impide continuar antes de elegir una respuesta', () => {
+    renderGuide();
+    start();
+    const next = screen.getByRole('button', { name: /siguiente pregunta/i });
+    expect(next).toBeDisabled();
+    fireEvent.click(next);
+    expect(screen.getByRole('form', { name: 'Pregunta 1 de 7' })).toBeInTheDocument();
+  });
 
-      // Responder todas las preguntas
-      for (let i = 0; i < 7; i++) {
-        const radioInputs = await screen.findAllByRole('radio');
-        fireEvent.click(radioInputs[0]);
-        
-        const confirmButton = await screen.findByRole('button', { name: /continuar/i });
-        fireEvent.click(confirmButton);
-        
-        // Esperar a que se muestre la siguiente pregunta o resultados
-        await waitFor(() => {
-          const nextQuestionOrResults = screen.queryByText(/pregunta/i) || screen.queryByText(/resultados/i);
-          expect(nextQuestionOrResults).toBeInTheDocument();
-        });
-      }
-    };
+  test('permite cancelar y comenzar sin respuestas anteriores', () => {
+    renderGuide();
+    start();
+    fireEvent.click(screen.getByRole('button', { name: /regresar al inicio/i }));
+    start();
+    expect(screen.queryByRole('radio', { checked: true })).not.toBeInTheDocument();
+  });
 
-    test('muestra resultados con todas las secciones necesarias', async () => {
-      renderWithTheme();
-      await completarPreguntas();
-      
-      await waitFor(() => {
-        expect(screen.getByText(/resultados de tu evaluación personalizada/i)).toBeInTheDocument();
-        expect(screen.getByText(/compatibilidad con tus necesidades/i)).toBeInTheDocument();
-        expect(screen.getByText(/análisis por categorías/i)).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: /comenzar de nuevo/i })).toBeEnabled();
-      });
-    });
+  test('muestra resultados, gráficos accesibles y recomendación detallada', () => {
+    renderGuide();
+    start();
+    const results = within(finish());
+    for (const name of [/resultados de tu evaluación personalizada/i, /^compatibilidad con tus necesidades$/i,
+      /^análisis por categorías$/i, /recomendación detallada/i, /ventajas principales/i, /consideraciones importantes/i]) {
+      expect(results.getByRole('heading', { name })).toBeInTheDocument();
+    }
+    expect(compatibility()).toHaveLength(3);
+    expect(results.getByRole('button', { name: /ir al simulador/i })).toHaveAttribute('href', '#simulador');
+  });
 
-    test('permite reiniciar desde los resultados', async () => {
-      renderWithTheme();
-      await completarPreguntas();
-      
-      const restartButton = await screen.findByRole('button', { name: /comenzar de nuevo/i });
-      fireEvent.click(restartButton);
-      
-      await waitFor(() => {
-        expect(screen.getByRole('heading', { name: /asistente de toma de decisiones/i })).toBeInTheDocument();
-        expect(window.localStorage.getItem('decisionGuideState')).toBeNull();
-      });
-    });
+  test('reinicia las respuestas y reproduce los resultados para las mismas selecciones', () => {
+    renderGuide();
+    start();
+    finish();
+    const previous = compatibility();
+    fireEvent.click(screen.getByRole('button', { name: /reiniciar el asistente/i }));
+    start();
+    expect(screen.queryByRole('radio', { checked: true })).not.toBeInTheDocument();
+    finish();
+    expect(compatibility()).toEqual(previous);
+  });
 
-    test('genera recomendaciones consistentes', async () => {
-      renderWithTheme();
-      await completarPreguntas();
-      
-      await waitFor(() => {
-        const resultados = screen.getByTestId('resultados-evaluacion');
-        expect(resultados).toHaveTextContent(/recomendación principal/i);
-        expect(resultados).toHaveTextContent(/alternativas sugeridas/i);
-      });
-    });
+  test('cambiar una respuesta anterior equivale a elegirla desde el principio', () => {
+    const { unmount } = renderGuide();
+    start();
+    answer(1);
+    finish(2);
+    const expected = compatibility();
+    unmount();
+    renderGuide();
+    start();
+    answer(0);
+    fireEvent.click(screen.getByRole('button', { name: /regresar a la pregunta anterior/i }));
+    answer(1);
+    finish(2);
+    expect(compatibility()).toEqual(expected);
   });
 });

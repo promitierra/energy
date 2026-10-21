@@ -1,35 +1,33 @@
 import React from 'react';
 import { vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { vi } from 'vitest';
 import '@testing-library/jest-dom';
 import Dashboard from '../../Dashboard';
-import { vi } from 'vitest';
 import { ThemeProvider } from '../../theme/ThemeProvider';
-import { vi } from 'vitest';
 
 // Mocks más descriptivos con testids para mejores aserciones
-vi.mock('../../graficos-comparativos', () => () => (
+vi.mock('../../graficos-comparativos', () => ({ default: () => (
   <div data-testid="graficos-content" role="region" aria-label="Análisis Comparativo">
     Análisis Comparativo
   </div>
-));
+) }));
 
-vi.mock('../../components/SimuladorPersonalizado', () => () => (
+vi.mock('../../components/SimuladorPersonalizado', () => ({ default: () => (
   <div data-testid="simulador-content" role="region" aria-label="Simulador Personalizado">
     Simulador Personalizado
   </div>
-));
+) }));
 
-vi.mock('../../components/DecisionGuide', () => () => (
+vi.mock('../../components/DecisionGuide', () => ({ default: () => (
   <div data-testid="decision-content" role="region" aria-label="Asistente de Decisión">
     Asistente de Decisión
   </div>
-));
+) }));
 
 describe('Dashboard Integration Flow', () => {
   beforeEach(() => {
     window.localStorage.clear();
+    window.history.replaceState(null, '', '#');
     document.documentElement.classList.remove('light', 'dark');
   });
 
