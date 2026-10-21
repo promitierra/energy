@@ -97,6 +97,19 @@ describe('Dashboard Component', () => {
     }
   });
 
+  test('navega las pestañas con flechas, Inicio y Fin manteniendo un único punto de tabulación', () => {
+    renderWithTheme();
+    const tabs = screen.getAllByRole('tab');
+    tabs[0].focus();
+    const steps: [string, number][] = [['ArrowRight', 1], ['End', 2], ['ArrowRight', 0], ['ArrowLeft', 2], ['Home', 0]];
+    for (const [key, index] of steps) {
+      fireEvent.keyDown(document.activeElement!, { key });
+      expect(tabs[index]).toHaveFocus();
+      expect(tabs[index]).toHaveAttribute('aria-selected', 'true');
+      tabs.forEach((tab, i) => expect(tab).toHaveAttribute('tabindex', i === index ? '0' : '-1'));
+    }
+  });
+
   test('cambia el tema correctamente', async () => {
     renderWithTheme();
     

@@ -60,9 +60,9 @@ const EstructuraCostosChart = ({ data }: EstructuraCostosChartProps) => {
       <div className="mt-4 text-sm text-gray-600 dark:text-gray-200">
         <h4 className="font-medium mb-1 dark:text-white">Interpretación del gráfico:</h4>
         <ul className="list-disc pl-5 space-y-1">
-          <li><span className="text-blue-500 font-medium">Red eléctrica:</span> Costos concentrados exclusivamente en el gasto energético anual, sin inversión ni mantenimiento.</li>
-          <li><span className="text-green-500 font-medium">Paneles solares:</span> Mayores costos iniciales pero sin gastos energéticos anuales. Requiere reemplazo de inversor a los 10 años.</li>
-          <li><span className="text-orange-500 font-medium">Generador a gas:</span> Combina todos los tipos de costos sin destacar en ninguno positivamente: inversión moderada, alto mantenimiento, costos energéticos continuos.</li>
+          <li><span className="text-blue-700 dark:text-blue-300 font-medium">Red eléctrica:</span> Costos concentrados exclusivamente en el gasto energético anual, sin inversión ni mantenimiento.</li>
+          <li><span className="text-green-700 dark:text-green-300 font-medium">Paneles solares:</span> Mayores costos iniciales pero sin gastos energéticos anuales. Requiere reemplazo de inversor a los 10 años.</li>
+          <li><span className="text-orange-700 dark:text-orange-300 font-medium">Generador a gas:</span> Combina todos los tipos de costos sin destacar en ninguno positivamente: inversión moderada, alto mantenimiento, costos energéticos continuos.</li>
         </ul>
       </div>
     </>

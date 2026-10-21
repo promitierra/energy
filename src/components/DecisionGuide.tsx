@@ -426,7 +426,7 @@ const DecisionGuide: React.FC = () => {
               <button
                 ref={iniciarButtonRef}
                 onClick={() => setPaso(1)}
-                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                 aria-label="Iniciar el asistente de decisión"
               >
                 Iniciar Asistente
@@ -523,7 +523,7 @@ const DecisionGuide: React.FC = () => {
                       reiniciarAsistente();
                     }
                   }}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white focus:outline-none focus:ring-2 focus:ring-gray-500"
+                  className="px-4 py-2 text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white focus:outline-hidden focus:ring-2 focus:ring-gray-500"
                   aria-label={paso > 1 ? "Regresar a la pregunta anterior" : "Regresar al inicio"}
                 >
                   {paso > 1 ? 'Anterior' : 'Cancelar'}
@@ -539,7 +539,7 @@ const DecisionGuide: React.FC = () => {
                     }
                   }}
                   disabled={respuestas[paso - 1] === undefined}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                   aria-label={paso === preguntas.length ? "Ver resultados" : "Siguiente pregunta"}
                 >
                   {paso === preguntas.length ? 'Ver Resultados' : 'Siguiente'}
@@ -695,7 +695,7 @@ const DecisionGuide: React.FC = () => {
               <div className="flex space-x-4">
                 <button
                   onClick={reiniciarAsistente}
-                  className="flex-1 px-6 py-3 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+                  className="flex-1 px-6 py-3 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 focus:outline-hidden focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
                   aria-label="Reiniciar el asistente"
                 >
                   Comenzar de Nuevo
@@ -704,7 +704,7 @@ const DecisionGuide: React.FC = () => {
                 <a
                   href="#simulador"
                   onClick={navegarAlSimulador}
-                  className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-center"
+                  className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-center"
                   role="button"
                 >
                   Ir al Simulador

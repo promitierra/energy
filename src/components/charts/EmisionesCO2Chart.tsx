@@ -39,7 +39,8 @@ const EmisionesCO2Chart = ({ data }: EmisionesCO2ChartProps) => {
             >
               {data.map((entry, index) => (
                 <Cell 
-                  key={`cell-${index}`} 
+                  key={`cell-${index}`}
+                  role="img" aria-label={`${entry.name}: ${entry.value} toneladas de CO₂`}
                   fill={COLORS[index % COLORS.length]} 
                 />
               ))}

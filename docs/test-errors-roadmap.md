@@ -49,19 +49,38 @@ Verificación final del 21 de octubre de 2026 con Node 22.23.3 y npm 11.21.1:
 
 - `npm ci`: instalación reproducible completada.
 - `npm run build`: TypeScript y compilación de producción aprobados.
-- `npm test -- --run`: **79/79 pruebas aprobadas en 15/15 archivos**.
-- Verificación enfocada de Dashboard y DecisionGuide: **15/15 aprobadas**.
+- `npm test -- --run`: **80/80 pruebas aprobadas en 15/15 archivos**.
+- Auditoría de dependencias durante `npm ci`: **0 vulnerabilidades**.
+- Chromium con Playwright y axe-core: **24 estados sin infracciones detectadas**
+  de las reglas WCAG 2 A/AA y 2.1 AA (tres secciones, resultados del simulador,
+  siete preguntas y resultados del asistente, en claro y oscuro).
+- Se verificaron el salto al contenido, flecha derecha entre pestañas, cálculo
+  con datos reales de formulario y enlace de resultados al simulador.
+- Las tres secciones no desbordan horizontalmente a 390 px; no hubo errores
+  JavaScript de página durante los recorridos.
+
+## Actualización de dependencias y accesibilidad
+
+Se eliminó node-forge, que no se utilizaba, y se actualizaron las dependencias
+vulnerables y Browserslist. Tailwind 3 arrastraba dependencias sin corrección
+compatible; se migró a Tailwind 4 y su plugin PostCSS conservando el tema por
+clase y los estilos equivalentes de bordes, sombras, contornos y diálogos.
+La compatibilidad mínima de navegador se documenta en el README.
+
+Se corrigió el contraste de pestañas, descripciones y leyendas, se nombraron
+los sectores de gráficos y se incorporó navegación de pestañas con flechas,
+Home/End y un único punto de entrada por Tab, cubierta por una regresión.
 
 ## Trabajo pendiente y límites
 
-- Ampliar integración con componentes reales: los flujos del dashboard usan
-  mocks de sus tres secciones; no sustituyen una prueba completa de navegador.
-- Auditar teclado, foco y contraste en ambos temas. Las relaciones ARIA y los
-  tests unitarios no acreditan cumplimiento completo de WCAG.
-- Revisar las dependencias: `npm ci` reportó **21 vulnerabilidades**
-  (1 baja, 6 moderadas y 14 altas). No se aplicaron actualizaciones ajenas a la
-  compatibilidad necesaria para instalar; los tests no validan su seguridad.
-- Actualizar la base de Browserslist, que genera un aviso de antigüedad, y
-  evaluar los avisos de dimensiones de Recharts en jsdom antes de suprimirlos.
+- Incorporar los recorridos de navegador a CI; las pruebas de integración
+  actuales de Vitest todavía usan mocks de las tres secciones.
+- Comprobar Firefox, Safari y lectores de pantalla. Los resultados automáticos
+  de Chromium no acreditan cumplimiento completo de WCAG.
+- Revisar visualmente etiquetas y ejes de gráficos en tamaños estrechos y
+  con zoom; la ausencia de desbordamiento de página no garantiza su legibilidad.
+- Mantener la auditoría de dependencias: cero avisos describe esta ejecución,
+  no una garantía de ausencia de vulnerabilidades futuras.
+- Evaluar los avisos de dimensiones de Recharts en jsdom antes de suprimirlos.
 - Mantener las cifras de esta página ligadas a ejecuciones reales, preferir
   selectores por rol/nombre accesible y aislar estado de navegación entre tests.

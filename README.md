@@ -14,7 +14,7 @@ Este proyecto proporciona un dashboard interactivo para comparar diferentes alte
 ## Tecnologías utilizadas
 - React con TypeScript
 - Recharts para visualizaciones de datos
-- Tailwind CSS para los estilos
+- Tailwind CSS 4 para los estilos
 - Vite para desarrollo y compilación
 - Vitest y React Testing Library para pruebas
 
@@ -65,6 +65,10 @@ npm run preview
 ```
 
 La compilación ejecuta TypeScript y Vite y genera `build/`.
+
+Tailwind 4 requiere Safari 16.4+, Chrome 111+ o Firefox 128+
+([requisitos oficiales](https://tailwindcss.com/docs/upgrade-guide#browser-requirements)).
+Las comprobaciones de navegador de esta entrega se realizaron en Chromium.
 
 ## Testing con Recharts, ThemeProvider y Formularios
 Este proyecto incluye tests para diferentes tipos de componentes: gráficos con Recharts, componentes que dependen del tema, y formularios interactivos. Para lograr un correcto funcionamiento de los tests, se implementó:
@@ -231,7 +235,10 @@ basadas en preguntas, tema persistente, carga diferida y pruebas unitarias y
 de integración del dashboard. Las comparativas usan datos definidos en el
 código; no incluyen tarifas ni precios de equipos en tiempo real.
 
-El foco actual es estabilizar las pruebas y validar accesibilidad y rendimiento.
+La compilación y las 80 pruebas pasan; la auditoría de dependencias no reporta
+vulnerabilidades. Se verificaron los flujos reales y la accesibilidad automática
+en Chromium en ambos temas. Queda ampliar la validación entre navegadores,
+lectores de pantalla y rendimiento.
 El detalle está en [Fase 3](docs/fase3-desarrollo.md).
 
 Quedan como evolución futura la integración de tarifas y clima por región,

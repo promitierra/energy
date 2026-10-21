@@ -83,7 +83,7 @@ class ChartErrorBoundary extends Component<Props, State> {
               </p>
               <div className="text-sm text-red-500 dark:text-red-300">
                 <details className="cursor-pointer">
-                  <summary className="focus:outline-none focus:underline">
+                  <summary className="focus:outline-hidden focus:underline">
                     Ver detalles técnicos
                   </summary>
                   <div className="mt-2 p-2 bg-white dark:bg-gray-800 rounded border border-red-200 dark:border-red-800">
@@ -101,7 +101,7 @@ class ChartErrorBoundary extends Component<Props, State> {
               <div className="mt-4">
                 <button
                   onClick={this.handleReset}
-                  className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                  className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 focus:outline-hidden focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
                   aria-label="Reintentar cargar el gráfico"
                 >
                   Reintentar

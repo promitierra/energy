@@ -106,7 +106,7 @@ const RetornoInversionChart: React.FC<RetornoInversionChartProps> = ({
             </div>
             <button 
               onClick={toggleTableView} 
-              className="text-sm px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 dark:text-blue-300"
+              className="text-sm px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-md transition-colors focus:outline-hidden focus:ring-2 focus:ring-blue-500 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 dark:text-blue-300"
               aria-label={showTable ? "Mostrar gráfico" : "Mostrar tabla de datos"}
             >
               {showTable ? "Ver Gráfico" : "Ver Tabla"}

@@ -2,7 +2,7 @@ import React from 'react';
 
 // Componentes simplificados de Card
 export const Card: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({ className, ...props }) => (
-  <div className={`rounded-lg border border-gray-200 bg-white shadow-sm ${className || ''}`} {...props} />
+  <div className={`rounded-lg border border-gray-200 bg-white shadow-xs ${className || ''}`} {...props} />
 );
 
 export const CardHeader: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({ className, ...props }) => (
@@ -20,7 +20,7 @@ export const CardTitle: React.FC<CardTitleProps> = ({ className, children, ...pr
 );
 
 export const CardDescription: React.FC<React.HTMLAttributes<HTMLParagraphElement>> = ({ className, ...props }) => (
-  <p className={`text-sm text-gray-500 ${className || ''}`} {...props} />
+  <p className={`text-sm text-gray-700 dark:text-gray-200 ${className || ''}`} {...props} />
 );
 
 export const CardContent: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({ className, ...props }) => (

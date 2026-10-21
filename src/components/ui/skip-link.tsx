@@ -25,7 +25,7 @@ const SkipLink: React.FC<SkipLinkProps> = ({
         py-2 
         rounded 
         transition-transform 
-        focus:outline-none 
+        focus:outline-hidden
         focus:ring-2 
         focus:ring-blue-500
       "

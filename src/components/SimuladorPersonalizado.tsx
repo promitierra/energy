@@ -236,7 +236,7 @@ const SimuladorPersonalizado: React.FC = () => {
                     value={values.consumoMensual}
                     onChange={handleChange}
                     placeholder="Ej: 250"
-                    className="mt-1 block w-full px-4 py-2 bg-white dark:bg-gray-800 border-2 border-blue-500 dark:border-blue-400 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 dark:text-white"
+                    className="mt-1 block w-full px-4 py-2 bg-white dark:bg-gray-800 border-2 border-blue-500 dark:border-blue-400 rounded-md shadow-xs focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 dark:text-white"
                     aria-required="true"
                     aria-describedby="consumoMensual-error consumoMensual-hint"
                     aria-invalid={!!errors.consumoMensual}
@@ -274,7 +274,7 @@ const SimuladorPersonalizado: React.FC = () => {
                     value={values.precioElectricidad}
                     onChange={handleChange}
                     placeholder="Ej: 454"
-                    className="mt-1 block w-full px-4 py-2 bg-white dark:bg-gray-800 border-2 border-orange-500 dark:border-orange-400 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 dark:text-white"
+                    className="mt-1 block w-full px-4 py-2 bg-white dark:bg-gray-800 border-2 border-orange-500 dark:border-orange-400 rounded-md shadow-xs focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 dark:text-white"
                     aria-required="true"
                     aria-describedby="precioElectricidad-error precioElectricidad-hint"
                     aria-invalid={!!errors.precioElectricidad}
@@ -313,7 +313,7 @@ const SimuladorPersonalizado: React.FC = () => {
                     value={values.horasSol}
                     onChange={handleChange}
                     placeholder="Ej: 5"
-                    className="mt-1 block w-full px-4 py-2 bg-white dark:bg-gray-800 border-2 border-yellow-500 dark:border-yellow-400 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 dark:text-white"
+                    className="mt-1 block w-full px-4 py-2 bg-white dark:bg-gray-800 border-2 border-yellow-500 dark:border-yellow-400 rounded-md shadow-xs focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 dark:text-white"
                     required
                     aria-invalid={!!errors.horasSol}
                     data-testid="input-horas-sol"
@@ -343,7 +343,7 @@ const SimuladorPersonalizado: React.FC = () => {
                     value={values.inversionInicial}
                     onChange={handleChange}
                     placeholder="Ej: 9500000"
-                    className="mt-1 block w-full px-4 py-2 bg-white dark:bg-gray-800 border-2 border-purple-500 dark:border-purple-400 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 dark:text-white"
+                    className="mt-1 block w-full px-4 py-2 bg-white dark:bg-gray-800 border-2 border-purple-500 dark:border-purple-400 rounded-md shadow-xs focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 dark:text-white"
                     required
                     aria-invalid={!!errors.inversionInicial}
                     data-testid="input-inversion-inicial"
@@ -359,7 +359,7 @@ const SimuladorPersonalizado: React.FC = () => {
               <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 pt-6 justify-center mt-6 border-t border-gray-200 dark:border-gray-700">
                 <button
                   type="submit"
-                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white text-base font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white text-base font-medium rounded-md shadow-xs focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
                   aria-label="Calcular simulación"
                   data-testid="btn-calcular"
                 >
@@ -368,7 +368,7 @@ const SimuladorPersonalizado: React.FC = () => {
                 <button
                   type="button"
                   onClick={reiniciar}
-                  className="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-base font-medium rounded-md shadow-sm hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
+                  className="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-base font-medium rounded-md shadow-xs hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-hidden focus:ring-2 focus:ring-gray-500 transition-colors"
                   aria-label="Reiniciar formulario"
                   data-testid="btn-reiniciar"
                 >
@@ -464,7 +464,7 @@ const SimuladorPersonalizado: React.FC = () => {
                         label={({name, value}: {name: string, value: number}) => `${name}: ${formatCurrency(value)}`}
                       >
                         {resultados.comparativaFinanciera.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORES[index % COLORES.length]} />
+                          <Cell key={`cell-${index}`} role="img" aria-label={`${entry.name}: ${entry.value}`} fill={COLORES[index % COLORES.length]} />
                         ))}
                       </Pie>
                       <RechartsTooltip formatter={(value: any) => [formatCurrency(value), '']} />

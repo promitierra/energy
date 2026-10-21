@@ -28,10 +28,11 @@ const Tab = memo(({ tabId, isActive, onClick, children, icon }: {
     id={`tab-${tabId}`}
     role="tab"
     aria-selected={isActive}
+    tabIndex={isActive ? 0 : -1}
     aria-controls={`panel-${tabId}`}
     className={`px-6 py-3 rounded-lg transition-colors flex items-center space-x-2 ${
       isActive 
-        ? 'bg-blue-500 text-white shadow-md' 
+        ? 'bg-blue-700 text-white shadow-md'
         : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
     }`}
     onClick={onClick}
@@ -130,7 +131,7 @@ function Dashboard() {
     <>
       <SkipLink targetId="main-content" />
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
-        <header className="bg-white dark:bg-gray-800 shadow-sm">
+        <header className="bg-white dark:bg-gray-800 shadow-xs">
           <div className="container mx-auto px-4 py-4 flex justify-between items-center">
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
               Dashboard Energético
@@ -153,6 +154,22 @@ function Dashboard() {
               className="flex flex-wrap gap-2 md:space-x-4" 
               role="tablist"
               aria-label="Secciones principales"
+              onKeyDown={(event) => {
+                const tabs = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
+                const current = tabs.indexOf(event.target as HTMLButtonElement);
+                if (current < 0) return;
+                let next: number;
+                switch (event.key) {
+                  case 'ArrowRight': next = (current + 1) % tabs.length; break;
+                  case 'ArrowLeft': next = (current - 1 + tabs.length) % tabs.length; break;
+                  case 'Home': next = 0; break;
+                  case 'End': next = tabs.length - 1; break;
+                  default: return;
+                }
+                event.preventDefault();
+                tabs[next].focus();
+                tabs[next].click();
+              }}
             >
               <Tab
                 tabId="graficos"
@@ -219,7 +236,7 @@ function Dashboard() {
               <div className="flex space-x-4">
                 <button 
                   onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                  className="text-sm text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                  className="text-sm text-blue-700 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
                 >
                   Volver arriba ↑
                 </button>

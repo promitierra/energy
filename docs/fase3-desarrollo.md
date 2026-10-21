@@ -10,7 +10,8 @@
 - Carga diferida con React.lazy/Suspense, estados de carga, memoización,
   precarga de gráficos y límites de error para gráficos.
 - Enlace para saltar al contenido, etiquetas de formulario, anuncios y manejo
-  de foco en el asistente; relación ARIA entre pestañas y panel activo.
+  de foco en el asistente; relación ARIA entre pestañas y panel activo, navegación
+  con flechas/Home/End y colores con contraste corregido.
 - Pruebas de componentes, ThemeProvider, formularios, gráficos, utilidades y
   navegación/persistencia del dashboard.
 
@@ -22,10 +23,11 @@ secciones con mocks; no equivalen a una prueba completa en navegador.
 
 - Mantener una ejecución reproducible de instalación, compilación y Vitest;
   consultar el resultado más reciente en [el roadmap de pruebas](test-errors-roadmap.md).
-- Ampliar la integración con componentes reales para cubrir el cuestionario
-  completo y la actualización de resultados del simulador.
-- Auditar navegación por teclado, foco, contraste y lectores de pantalla en
-  ambos temas con herramientas como axe/Lighthouse y comprobaciones manuales.
+- Incorporar a CI los flujos reales ya comprobados en Chromium: simulación,
+  cuestionario completo y navegación desde resultados al simulador.
+- Ampliar las comprobaciones a Firefox, Safari y lectores de pantalla. Axe no
+  detectó infracciones en 24 estados auditados en ambos temas; no sustituye
+  una auditoría manual completa.
 - Medir rendimiento antes de decidir nuevas optimizaciones.
 - Validar modelos y datos con instalaciones reales; las comparativas actuales
   usan datos definidos en el código, sin un servicio de tarifas en tiempo real.

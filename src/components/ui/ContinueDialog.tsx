@@ -58,7 +58,7 @@ const ContinueDialog: React.FC<ContinueDialogProps> = ({
       className="fixed inset-0 z-50 overflow-y-auto"
       onKeyDown={handleKeyDown}
     >
-      <div className="fixed inset-0 bg-black bg-opacity-50 transition-opacity" />
+      <div className="fixed inset-0 bg-black/50 transition-opacity" />
       
       <div className="flex min-h-screen items-center justify-center p-4">
         <div className="relative bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6 shadow-xl">
@@ -80,7 +80,7 @@ const ContinueDialog: React.FC<ContinueDialogProps> = ({
             <button
               type="button"
               onClick={onCancel}
-              className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
+              className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-md focus:outline-hidden focus:ring-2 focus:ring-gray-500"
             >
               {cancelLabel}
             </button>
@@ -88,7 +88,7 @@ const ContinueDialog: React.FC<ContinueDialogProps> = ({
               type="button"
               ref={confirmButtonRef}
               onClick={onConfirm}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md focus:outline-hidden focus:ring-2 focus:ring-blue-500"
             >
               {confirmLabel}
             </button>
