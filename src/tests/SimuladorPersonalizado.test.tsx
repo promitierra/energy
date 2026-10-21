@@ -50,11 +50,11 @@ describe('SimuladorPersonalizado', () => {
       renderComponent();
       const input = screen.getByTestId('input-precio-electricidad');
       
-      fireEvent.change(input, { target: { value: '100' } });
-      expect(await screen.findByText(/la tarifa debe estar entre 300 y 1000 cop\/kwh/i)).toBeInTheDocument();
+      fireEvent.change(input, { target: { value: '-1' } });
+      expect(await screen.findByText(/la tarifa debe estar entre 0 y 1000000 cop\/kwh/i)).toBeInTheDocument();
       
-      fireEvent.change(input, { target: { value: '1200' } });
-      expect(await screen.findByText(/la tarifa debe estar entre 300 y 1000 cop\/kwh/i)).toBeInTheDocument();
+      fireEvent.change(input, { target: { value: '1000001' } });
+      expect(await screen.findByText(/la tarifa debe estar entre 0 y 1000000 cop\/kwh/i)).toBeInTheDocument();
     });
 
     test('muestra error cuando las horas de sol son inválidas', async () => {

@@ -45,30 +45,118 @@ energy-dashboard/
 └── ...                        # Archivos de configuración del proyecto
 ```
 
-## Instalación y configuración
+## Guía de instalación
 
-Requiere Node.js `^20.19.0 || >=22.12.0` (se recomienda Node 22) y npm 11.
-La instalación se verificó con Node 22/npm 11; npm 9 y 10 presentaron un error
-interno del resolvedor de dependencias (`edgesOut`) al actualizar el lockfile.
-Desde el directorio del repositorio:
+### 1. Requisitos
+
+- Git para clonar el repositorio.
+- Node.js 22 (versión 22.12.0 o posterior de esa rama) y npm 11.
+- Un navegador moderno: Safari 16.4+, Chrome 111+ o Firefox 128+, según los
+  [requisitos de Tailwind 4](https://tailwindcss.com/docs/upgrade-guide#browser-requirements).
+
+Instala Node desde [su sitio oficial](https://nodejs.org/en/download) o tu
+administrador de versiones. Comprueba las versiones en una terminal:
 
 ```bash
+node --version
+npm --version
+```
+
+Si tienes Node 22 compatible pero npm es anterior a 11, actualiza npm:
+
+```bash
+npm install --global npm@11
+```
+
+El proyecto declara Node `^20.19.0 || >=22.12.0`; la instalación se verificó
+con Node 22.23.3 y npm 11.21.1. npm 9 y 10 presentaron un error interno del
+resolvedor (`edgesOut`) al actualizar el lockfile.
+
+### 2. Descargar e instalar
+
+```bash
+git clone https://github.com/promitierra/energy.git
+cd energy
 npm ci
+```
+
+Si ya tienes el repositorio, abre una terminal en su directorio y ejecuta
+`npm ci`. Este comando instala las versiones de `package-lock.json` y reemplaza
+el contenido de `node_modules/`. No requiere Python, una base de datos ni
+credenciales de servicios externos para ejecutar el dashboard.
+
+### 3. Ejecutar en desarrollo
+
+```bash
 npm run dev
 ```
 
-El servidor abre http://localhost:3000. Para compilar y previsualizar:
+Abre http://localhost:3000. Vite actualiza la página al guardar cambios.
+Usa la URL que muestre la terminal si el puerto está ocupado. Para elegir
+otro puerto explícitamente:
 
 ```bash
+npm run dev -- --port 3001
+```
+
+Detén el servidor con `Ctrl+C`.
+
+### 4. Verificar y compilar
+
+```bash
+npm test -- --run
 npm run build
 npm run preview
 ```
 
-La compilación ejecuta TypeScript y Vite y genera `build/`.
+Las pruebas se ejecutan una vez. La compilación verifica TypeScript y genera
+el sitio estático en `build/`. La previsualización local suele estar en
+http://localhost:4173; comprueba la URL indicada por la terminal.
 
-Tailwind 4 requiere Safari 16.4+, Chrome 111+ o Firefox 128+
-([requisitos oficiales](https://tailwindcss.com/docs/upgrade-guide#browser-requirements)).
-Las comprobaciones de navegador de esta entrega se realizaron en Chromium.
+Para publicar, sirve el contenido de `build/` con un alojamiento de archivos
+estáticos. `npm run preview` permite revisar la compilación localmente; no es
+el servidor recomendado para producción.
+
+### ¿Se necesita un entorno virtual o Uvicorn?
+
+**Para el dashboard, no.** Es una aplicación React/Vite y sus dependencias se
+instalan localmente en `node_modules/` mediante npm. Uvicorn es un servidor
+ASGI para aplicaciones web Python; no crea entornos virtuales y este proyecto
+no tiene un backend ASGI que necesite ejecutarlo.
+
+**Solo para los gráficos de investigación opcionales**, conviene aislar las
+dependencias Python en un entorno virtual. No hace falta ejecutar estos pasos
+para usar el dashboard. Con Python 3 y su módulo `venv` disponibles, desde la
+raíz del repositorio, crea el entorno fuera del checkout:
+
+```bash
+# Linux/macOS
+python3 -m venv ../energy-research-venv
+source ../energy-research-venv/bin/activate
+python -m pip install -r docs/investigacion/visualizaciones/requirements.txt
+```
+
+En Windows PowerShell:
+
+```powershell
+py -3 -m venv ..\energy-research-venv
+..\energy-research-venv\Scripts\Activate.ps1
+python -m pip install -r docs/investigacion/visualizaciones/requirements.txt
+```
+
+Consulta las instrucciones de uso en
+[la documentación de visualizaciones](docs/investigacion/visualizaciones/README.md).
+Al terminar, ejecuta `deactivate`. Si más adelante se añade una API Python
+ASGI, entonces se podrá evaluar Uvicorn para servirla dentro de ese entorno.
+
+### Problemas frecuentes
+
+- **`node` o `npm` no se encuentra:** instala Node y vuelve a abrir la terminal.
+- **`EBADENGINE` o `edgesOut`:** verifica que la terminal use Node 22 compatible
+  y npm 11; después vuelve a ejecutar `npm ci`.
+- **`tsc` o `vitest` no se encuentra:** ejecuta `npm ci` desde la raíz del
+  repositorio e invoca las herramientas mediante los comandos `npm` anteriores.
+- **Puerto ocupado:** usa `npm run dev -- --port 3001` y abre la URL indicada.
 
 ## Testing con Recharts, ThemeProvider y Formularios
 Este proyecto incluye tests para diferentes tipos de componentes: gráficos con Recharts, componentes que dependen del tema, y formularios interactivos. Para lograr un correcto funcionamiento de los tests, se implementó:
@@ -235,7 +323,7 @@ basadas en preguntas, tema persistente, carga diferida y pruebas unitarias y
 de integración del dashboard. Las comparativas usan datos definidos en el
 código; no incluyen tarifas ni precios de equipos en tiempo real.
 
-La compilación y las 80 pruebas pasan; la auditoría de dependencias no reporta
+La compilación y la suite de pruebas pasan; la auditoría de dependencias no reporta
 vulnerabilidades. Se verificaron los flujos reales y la accesibilidad automática
 en Chromium en ambos temas. Queda ampliar la validación entre navegadores,
 lectores de pantalla y rendimiento.
@@ -263,3 +351,7 @@ Las contribuciones son bienvenidas. Por favor, abrir un issue primero para discu
 ## Reconocimientos
 - Datos obtenidos de estudios de mercado de sistemas energéticos en Colombia
 - Inspirado en comparativas de eficiencia energética y sostenibilidad
+
+### Simulación y características de equipos
+
+El simulador permite editar paneles, inversores, baterías y características descriptivas adicionales. Consulte el [modelo de simulación](docs/modelo-simulacion.md) para las ecuaciones, unidades, ejemplo reproducible, limitaciones y fuentes técnicas.

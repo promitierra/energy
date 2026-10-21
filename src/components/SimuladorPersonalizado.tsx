@@ -1,506 +1,99 @@
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
-import Tooltip from './ui/tooltip';
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip as RechartsTooltip,
-  Legend,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell
-} from 'recharts';
+import React, { useEffect, useRef, useState } from 'react';
+import EquipmentEditor from './EquipmentEditor';
+import { defaultEquipment, Equipment, simulateSolar, SolarInput, validateInput } from '../modules/solar/model';
 
-interface FormValues {
-  consumoMensual: string;
-  horasSol: string;
-  inversionInicial: string;
-  precioElectricidad: string;
-  eficienciaPaneles: string;
-  vidaUtil: string;
-}
-
-interface FormErrors {
-  consumoMensual?: string;
-  horasSol?: string;
-  inversionInicial?: string;
-  precioElectricidad?: string;
-  eficienciaPaneles?: string;
-  vidaUtil?: string;
-}
-
-interface ResultadosSimulacion {
-  potenciaRequerida: number;
-  numeroPaneles: number;
-  ahorroAnual: number;
-  retornoInversion: number;
-  comparativaFinanciera: { name: string; value: number }[];
-}
-
-const COLORES = ['#0088FE', '#00C49F', '#FF8042', '#8884d8'];
-
-const SimuladorPersonalizado: React.FC = () => {
-  const [values, setValues] = useState<FormValues>({
-    consumoMensual: '',
-    horasSol: '',
-    inversionInicial: '',
-    precioElectricidad: '',
-    eficienciaPaneles: '20',
-    vidaUtil: '25'
-  });
-
-  const [errors, setErrors] = useState<FormErrors>({});
-  const [resultados, setResultados] = useState<ResultadosSimulacion | null>(null);
-
-  const formRef = useRef<HTMLFormElement>(null);
-  const resultadosRef = useRef<HTMLDivElement>(null);
-
-  // Efecto para manejar el foco después de calcular
-  useEffect(() => {
-    if (resultados && resultadosRef.current) {
-      resultadosRef.current.focus();
-    }
-  }, [resultados]);
-
-  const validarCampo = (name: string, value: string): string | undefined => {
-    if (!value) return 'El campo es requerido';
-
-    const numValue = parseFloat(value);
-
-    switch (name) {
-      case 'consumoMensual':
-        if (numValue < 0 || numValue > 5000) return 'El consumo debe estar entre 0 y 5000 kWh';
-        break;
-      case 'horasSol':
-        if (numValue <= 0 || numValue > 12) return 'Las horas de sol deben estar entre 0 y 12';
-        break;
-      case 'inversionInicial':
-        if (numValue < 0) return 'La inversión no puede ser negativa';
-        break;
-      case 'precioElectricidad':
-        if (numValue < 300 || numValue > 1000) return 'La tarifa debe estar entre 300 y 1000 COP/kWh';
-        break;
-    }
-
-    return undefined;
+type Fields = { consumoMensual: string; precioElectricidad: string; horasSol: string; inversionInicial: string; cellTemperatureC: string; otherLossesPct: string; daytimeLoadPct: string; annualMaintenanceCOP: string };
+const initialFields = (): Fields => ({ consumoMensual: '', precioElectricidad: '', horasSol: '', inversionInicial: '', cellTemperatureC: '25', otherLossesPct: '14', daytimeLoadPct: '50', annualMaintenanceCOP: '0' });
+const currency = (value: number) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(value);
+const decimal = (value: number) => new Intl.NumberFormat('es-CO', { maximumFractionDigits: 2 }).format(value);
+const inputClass = 'mt-1 block w-full rounded border border-gray-500 p-2 bg-white text-gray-900 dark:bg-gray-800 dark:text-gray-100';
+export default function SimuladorPersonalizado() {
+  const [fields, setFields] = useState(initialFields);
+  const [equipment, setEquipment] = useState<Equipment>(defaultEquipment);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitted, setSubmitted] = useState<{ input: SolarInput; result: ReturnType<typeof simulateSolar>; signature: string } | null>(null);
+  const resultsRef = useRef<HTMLDivElement>(null);
+  useEffect(() => { if (submitted) resultsRef.current?.focus(); }, [submitted]);
+  const signature = JSON.stringify({ fields, equipment });
+  const fieldError = (key: keyof Fields, value: string) => {
+    if (value.trim() === '') return 'El campo es requerido';
+    const n = Number(value);
+    if (!Number.isFinite(n)) return 'Ingrese un número finito';
+    if (key === 'consumoMensual' && (n < 0 || n > 5000)) return 'El consumo debe estar entre 0 y 5000 kWh';
+    if (key === 'horasSol' && (n < 0.01 || n > 12)) return 'Las horas de sol deben estar entre 0 y 12 (mínimo 0,01)';
+    if (key === 'inversionInicial' && n < 0) return 'La inversión no puede ser negativa';
+    if (key === 'precioElectricidad' && (n < 0 || n > 1000000)) return 'La tarifa debe estar entre 0 y 1000000 COP/kWh';
+    return '';
   };
-
-  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setValues(prev => ({ ...prev, [name]: value }));
-    
-    const error = validarCampo(name, value);
-    setErrors(prev => ({ ...prev, [name]: error }));
-  }, []);
-
-  const calcular = useCallback(() => {
-    // Validar todos los campos
-    const newErrors: FormErrors = {};
-    let hasErrors = false;
-
-    Object.entries(values).forEach(([key, value]) => {
-      if (key === 'eficienciaPaneles' || key === 'vidaUtil') return; // Opcionales
-      
-      const error = validarCampo(key, value);
-      if (error) {
-        hasErrors = true;
-        newErrors[key as keyof FormErrors] = error;
-      }
-    });
-
-    setErrors(newErrors);
-
-    if (hasErrors) return;
-
-    // Realizar cálculos
-    const consumo = parseFloat(values.consumoMensual);
-    const horasSol = parseFloat(values.horasSol);
-    const tarifa = parseFloat(values.precioElectricidad);
-    const inversion = parseFloat(values.inversionInicial);
-    const eficiencia = parseFloat(values.eficienciaPaneles) / 100;
-    const vidaUtil = parseInt(values.vidaUtil);
-
-    // Calcular potencia requerida: consumo mensual * 1000 / (30 días * horas de sol * eficiencia)
-    const potenciaRequerida = (consumo * 1000) / (30 * horasSol * eficiencia);
-    
-    // Paneles requeridos (asumiendo paneles estándar de 400W)
-    const numeroPaneles = Math.ceil(potenciaRequerida / 400);
-    
-    // Ahorro mensual: consumo * tarifa
-    const ahorroMensual = consumo * tarifa;
-    const ahorroAnual = ahorroMensual * 12;
-    
-    // Retorno de inversión en años: inversión / ahorro anual
-    const retornoInversion = inversion / ahorroAnual;
-
-    // Comparativa financiera para gráfico
-    const comparativaFinanciera = [
-      { name: 'Inversión', value: inversion },
-      { name: 'Ahorro a 10 años', value: ahorroAnual * 10 },
-      { name: 'Ganancia neta', value: ahorroAnual * 10 - inversion },
-      { name: 'Beneficio total', value: ahorroAnual * vidaUtil - inversion }
-    ];
-
-    setResultados({
-      potenciaRequerida,
-      numeroPaneles,
-      ahorroAnual,
-      retornoInversion,
-      comparativaFinanciera
-    });
-  }, [values]);
-
-  const escenarios = useMemo(() => {
-    if (!resultados) return [];
-    
-    return [
-      { name: 'Base', retorno: resultados.retornoInversion },
-      { name: '+20% electricidad', retorno: resultados.retornoInversion * 0.8 }, 
-      { name: '-20% electricidad', retorno: resultados.retornoInversion * 1.2 }, 
-      { name: '+20% eficiencia', retorno: resultados.retornoInversion * 0.9 },
-      { name: '-20% inversion', retorno: resultados.retornoInversion * 0.8 }
-    ];
-  }, [resultados]);
-
-  const reiniciar = useCallback(() => {
-    setValues({
-      consumoMensual: '',
-      horasSol: '',
-      inversionInicial: '',
-      precioElectricidad: '',
-      eficienciaPaneles: '20',
-      vidaUtil: '25'
-    });
-    setErrors({});
-    setResultados(null);
-  }, []);
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(value);
+  const field = (key: keyof Fields, label: string, hint: string, min: number, max: number, testId?: string) => <label className="block" htmlFor={key}>
+    <span className="font-semibold">{label} *</span>
+    <input id={key} name={key} type="number" step="any" min={min} max={max} className={inputClass} value={fields[key]} required aria-required="true" aria-invalid={Boolean(errors[key])} aria-describedby={`${key}-hint${errors[key] ? ` ${key}-error` : ''}`} data-testid={testId} onChange={event => {
+      setFields(previous => ({ ...previous, [key]: event.target.value }));
+      setErrors(previous => ({ ...previous, [key]: fieldError(key, event.target.value) }));
+    }} />
+    <span id={`${key}-hint`} className="block text-sm text-gray-700 dark:text-gray-300">{hint}</span>
+    {errors[key] && <span id={`${key}-error`} role="alert" className="block text-red-700 dark:text-red-300">{errors[key]}</span>}
+  </label>;
+  const calculate = (event: React.FormEvent) => {
+    event.preventDefault();
+    const nextErrors: Record<string, string> = {};
+    (Object.keys(fields) as (keyof Fields)[]).forEach(key => { const error = fieldError(key, fields[key]); if (error) nextErrors[key] = error; });
+    const input: SolarInput = { monthlyLoadKWh: Number(fields.consumoMensual), peakSunHours: Number(fields.horasSol), tariffCOP: Number(fields.precioElectricidad), investmentCOP: Number(fields.inversionInicial), cellTemperatureC: Number(fields.cellTemperatureC), otherLossesPct: Number(fields.otherLossesPct), daytimeLoadPct: Number(fields.daytimeLoadPct), annualMaintenanceCOP: Number(fields.annualMaintenanceCOP), equipment: JSON.parse(JSON.stringify(equipment)) };
+    const validation = validateInput(input);
+    if (validation.length) nextErrors.equipment = validation.join(' ');
+    setErrors(nextErrors);
+    if (!Object.keys(nextErrors).length) setSubmitted({ input, result: simulateSolar(input), signature });
   };
-
-  return (
-    <div className="space-y-6">
-      <Card className="dark:bg-gray-800 shadow-lg" role="region" aria-label="Simulador de energía solar">
-        <CardHeader className="bg-blue-50 dark:bg-gray-700 pb-2 rounded-t-lg">
-          <CardTitle className="text-xl text-center text-blue-800 dark:text-blue-200">
-            Simulador Personalizado de Energía Solar
-          </CardTitle>
-          <CardDescription className="text-center text-blue-600 dark:text-blue-300">
-            Ingrese sus datos de consumo y tarifa para calcular el potencial de ahorro
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <form 
-            ref={formRef}
-            onSubmit={(e) => {
-              e.preventDefault();
-              calcular();
-            }}
-            className="p-4 border-2 border-dashed border-blue-300 dark:border-blue-600 rounded-lg mb-6 shadow-lg"
-            aria-label="Formulario de simulación"
-            data-testid="simulador-form"
-          >
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-5 text-center">
-              📋 Complete los campos requeridos
-            </h3>
-            
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Consumo Mensual */}
-                <div className="bg-white dark:bg-gray-700 p-4 rounded-lg shadow-md border-l-4 border-green-500">
-                  <div className="flex items-center justify-between">
-                    <label
-                      htmlFor="consumoMensual"
-                      className="block text-sm font-bold text-gray-700 dark:text-gray-200"
-                    >
-                      Consumo mensual (kWh) *
-                    </label>
-                    <Tooltip content="El consumo mensual típico de un hogar está entre 150-300 kWh">
-                      <span className="text-gray-500 cursor-help" aria-hidden="true">ℹ️</span>
-                    </Tooltip>
-                  </div>
-                  <input
-                    type="number"
-                    id="consumoMensual"
-                    name="consumoMensual"
-                    value={values.consumoMensual}
-                    onChange={handleChange}
-                    placeholder="Ej: 250"
-                    className="mt-1 block w-full px-4 py-2 bg-white dark:bg-gray-800 border-2 border-blue-500 dark:border-blue-400 rounded-md shadow-xs focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 dark:text-white"
-                    aria-required="true"
-                    aria-describedby="consumoMensual-error consumoMensual-hint"
-                    aria-invalid={!!errors.consumoMensual}
-                    min="0"
-                    max="5000"
-                    data-testid="input-consumo-mensual"
-                  />
-                  <p id="consumoMensual-hint" className="text-xs text-gray-600 dark:text-gray-300 mt-1">
-                    El consumo mensual típico de un hogar está entre 150-300 kWh
-                  </p>
-                  {errors.consumoMensual && (
-                    <p id="consumoMensual-error" className="mt-1 text-sm text-red-600 dark:text-red-400" role="alert">
-                      {errors.consumoMensual}
-                    </p>
-                  )}
-                </div>
-                
-                {/* Tarifa de Energía */}
-                <div className="bg-white dark:bg-gray-700 p-4 rounded-lg shadow-md border-l-4 border-orange-500">
-                  <div className="flex items-center justify-between">
-                    <label
-                      htmlFor="precioElectricidad"
-                      className="block text-sm font-bold text-gray-700 dark:text-gray-200"
-                    >
-                      Tarifa de energía (COP/kWh) *
-                    </label>
-                    <Tooltip content="Puede encontrar este valor en su factura de energía">
-                      <span className="text-gray-500 cursor-help" aria-hidden="true">ℹ️</span>
-                    </Tooltip>
-                  </div>
-                  <input
-                    type="number"
-                    id="precioElectricidad"
-                    name="precioElectricidad"
-                    value={values.precioElectricidad}
-                    onChange={handleChange}
-                    placeholder="Ej: 454"
-                    className="mt-1 block w-full px-4 py-2 bg-white dark:bg-gray-800 border-2 border-orange-500 dark:border-orange-400 rounded-md shadow-xs focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 dark:text-white"
-                    aria-required="true"
-                    aria-describedby="precioElectricidad-error precioElectricidad-hint"
-                    aria-invalid={!!errors.precioElectricidad}
-                    min="300"
-                    max="1000"
-                    data-testid="input-precio-electricidad"
-                  />
-                  <p id="precioElectricidad-hint" className="text-xs text-gray-600 dark:text-gray-300 mt-1">
-                    Puede encontrar este valor en su factura de energía
-                  </p>
-                  {errors.precioElectricidad && (
-                    <p id="precioElectricidad-error" className="mt-1 text-sm text-red-600 dark:text-red-400" role="alert">
-                      {errors.precioElectricidad}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Horas de Sol */}
-                <div className="bg-white dark:bg-gray-700 p-4 rounded-lg shadow-md border-l-4 border-yellow-500">
-                  <label
-                    htmlFor="horasSol"
-                    className="block text-sm font-bold text-gray-700 dark:text-gray-200"
-                  >
-                    Horas de sol promedio por día *
-                  </label>
-                  <p className="text-xs text-gray-600 dark:text-gray-300 mb-2">
-                    Valor típico en Colombia: 4-6 horas/día
-                  </p>
-                  <input
-                    type="number"
-                    step="0.1"
-                    id="horasSol"
-                    name="horasSol"
-                    value={values.horasSol}
-                    onChange={handleChange}
-                    placeholder="Ej: 5"
-                    className="mt-1 block w-full px-4 py-2 bg-white dark:bg-gray-800 border-2 border-yellow-500 dark:border-yellow-400 rounded-md shadow-xs focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 dark:text-white"
-                    required
-                    aria-invalid={!!errors.horasSol}
-                    data-testid="input-horas-sol"
-                  />
-                  {errors.horasSol && (
-                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                      {errors.horasSol}
-                    </p>
-                  )}
-                </div>
-
-                {/* Inversión Inicial */}
-                <div className="bg-white dark:bg-gray-700 p-4 rounded-lg shadow-md border-l-4 border-purple-500">
-                  <label
-                    htmlFor="inversionInicial"
-                    className="block text-sm font-bold text-gray-700 dark:text-gray-200"
-                  >
-                    Inversión inicial (COP) *
-                  </label>
-                  <p className="text-xs text-gray-600 dark:text-gray-300 mb-2">
-                    Costo estimado del sistema: 9-16 millones COP
-                  </p>
-                  <input
-                    type="number"
-                    id="inversionInicial"
-                    name="inversionInicial"
-                    value={values.inversionInicial}
-                    onChange={handleChange}
-                    placeholder="Ej: 9500000"
-                    className="mt-1 block w-full px-4 py-2 bg-white dark:bg-gray-800 border-2 border-purple-500 dark:border-purple-400 rounded-md shadow-xs focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 dark:text-white"
-                    required
-                    aria-invalid={!!errors.inversionInicial}
-                    data-testid="input-inversion-inicial"
-                  />
-                  {errors.inversionInicial && (
-                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                      {errors.inversionInicial}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 pt-6 justify-center mt-6 border-t border-gray-200 dark:border-gray-700">
-                <button
-                  type="submit"
-                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white text-base font-medium rounded-md shadow-xs focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
-                  aria-label="Calcular simulación"
-                  data-testid="btn-calcular"
-                >
-                  🧮 Calcular
-                </button>
-                <button
-                  type="button"
-                  onClick={reiniciar}
-                  className="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-base font-medium rounded-md shadow-xs hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-hidden focus:ring-2 focus:ring-gray-500 transition-colors"
-                  aria-label="Reiniciar formulario"
-                  data-testid="btn-reiniciar"
-                >
-                  🔄 Reiniciar
-                </button>
-              </div>
-            </div>
-          </form>
-          
-          <div className="text-center text-sm text-gray-500 dark:text-gray-400" role="note">
-            <p>* Campos obligatorios</p>
-          </div>
-        </CardContent>
-      </Card>
-
-      {resultados && (
-        <div 
-          className="space-y-6" 
-          data-testid="resultado-calculo"
-          ref={resultadosRef}
-          tabIndex={-1}
-          role="region"
-          aria-label="Resultados de la simulación"
-        >
-          <Card className="dark:bg-gray-800">
-            <CardHeader>
-              <CardTitle className="dark:text-gray-100">Resultados de la simulación</CardTitle>
-              <CardDescription className="dark:text-gray-300">
-                Basado en un consumo de {values.consumoMensual} kWh y tarifa de {values.precioElectricidad} COP/kWh
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h3 className="text-lg font-medium mb-4 text-gray-800 dark:text-gray-100">Datos técnicos:</h3>
-                  <ul className="space-y-3 text-sm text-gray-700 dark:text-gray-200">
-                    <li className="flex items-center">
-                      <span className="inline-block w-3 h-3 bg-blue-500 rounded-full mr-2"></span>
-                      <span>Potencia requerida: <span className="font-semibold">{Math.round(resultados.potenciaRequerida)} W</span></span>
-                    </li>
-                    <li className="flex items-center">
-                      <span className="inline-block w-3 h-3 bg-green-500 rounded-full mr-2"></span>
-                      <span>Número aproximado de paneles: <span className="font-semibold">{resultados.numeroPaneles}</span></span>
-                    </li>
-                    <li className="flex items-center">
-                      <span className="inline-block w-3 h-3 bg-orange-500 rounded-full mr-2"></span>
-                      <span>Ahorro mensual estimado: <span className="font-semibold">{formatCurrency(Math.round(resultados.ahorroAnual / 12))}</span></span>
-                    </li>
-                    <li className="flex items-center">
-                      <span className="inline-block w-3 h-3 bg-purple-500 rounded-full mr-2"></span>
-                      <span>Ahorro anual estimado: <span className="font-semibold">{formatCurrency(Math.round(resultados.ahorroAnual))}</span></span>
-                    </li>
-                    <li className="flex items-center">
-                      <span className="inline-block w-3 h-3 bg-red-500 rounded-full mr-2"></span>
-                      <span>Tiempo de recuperación de inversión: <span className="font-semibold">{resultados.retornoInversion.toFixed(1)} años</span></span>
-                    </li>
-                  </ul>
-                </div>
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={escenarios} className="dark:text-gray-100">
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" stroke="#CBD5E0" className="dark:text-gray-100" />
-                      <YAxis label={{ value: 'Años', angle: -90, position: 'insideLeft' }} stroke="#CBD5E0" />
-                      <RechartsTooltip formatter={(value: any) => [`${value.toFixed(1)} años`, 'Tiempo de recuperación']} />
-                      <Bar dataKey="retorno" fill="#8884d8" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="dark:bg-gray-800">
-            <CardHeader>
-              <CardTitle className="dark:text-gray-100">Estructura financiera</CardTitle>
-              <CardDescription className="dark:text-gray-300">
-                Análisis comparativo de costos y ahorros a 10 años
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={resultados.comparativaFinanciera}
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                        label={({name, value}: {name: string, value: number}) => `${name}: ${formatCurrency(value)}`}
-                      >
-                        {resultados.comparativaFinanciera.map((entry, index) => (
-                          <Cell key={`cell-${index}`} role="img" aria-label={`${entry.name}: ${entry.value}`} fill={COLORES[index % COLORES.length]} />
-                        ))}
-                      </Pie>
-                      <RechartsTooltip formatter={(value: any) => [formatCurrency(value), '']} />
-                      <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                
-                <div className="flex flex-col justify-center">
-                  <h4 className="text-lg font-medium mb-4 text-gray-800 dark:text-gray-100">Resumen del análisis financiero:</h4>
-                  <ul className="space-y-3 text-sm text-gray-700 dark:text-gray-200">
-                    <li className="flex items-center">
-                      <span className="inline-block w-3 h-3 bg-blue-500 rounded-full mr-2"></span>
-                      <span>Inversión inicial: <span className="font-semibold">{formatCurrency(parseFloat(values.inversionInicial))}</span></span>
-                    </li>
-                    <li className="flex items-center">
-                      <span className="inline-block w-3 h-3 bg-green-500 rounded-full mr-2"></span>
-                      <span>Ahorro total en 10 años: <span className="font-semibold">{formatCurrency(resultados.ahorroAnual * 10)}</span></span>
-                    </li>
-                    <li className="flex items-center">
-                      <span className="inline-block w-3 h-3 bg-orange-500 rounded-full mr-2"></span>
-                      <span>Ganancia neta en 10 años: <span className="font-semibold">{formatCurrency(resultados.ahorroAnual * 10 - parseFloat(values.inversionInicial) * 1.3)}</span></span>
-                    </li>
-                    <li className="flex items-center">
-                      <span className="inline-block w-3 h-3 bg-purple-500 rounded-full mr-2"></span>
-                      <span>Ganancia neta durante vida útil: <span className="font-semibold">{formatCurrency(resultados.ahorroAnual * parseFloat(values.vidaUtil) - parseFloat(values.inversionInicial) * 1.5)}</span></span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+  const result = submitted?.result;
+  const rows = result ? [
+    ['Potencia instalada (kWp)', result.installedKWp], ['Área de módulos aproximada (m²)', result.areaM2],
+    ['Producción solar AC mensual (kWh)', result.productionKWh], ['Autoconsumo solar mensual (kWh)', result.selfConsumedKWh],
+    ['Consumo directo solar (kWh)', result.directKWh], ['Compra de red mensual (kWh)', result.gridKWh],
+    ['Excedentes sin remuneración (kWh)', result.exportedKWh], ['Recorte del inversor (kWh)', result.clippingKWh],
+    ['Capacidad nominal de baterías (kWh)', result.nominalBatteryKWh], ['Capacidad utilizable de baterías (kWh)', result.usableBatteryKWh],
+    ['Carga de batería desde AC (kWh)', result.chargedKWh], ['Descarga de batería hacia AC (kWh)', result.dischargedKWh],
+    ['Pérdidas de batería (kWh)', result.batteryLossKWh], ['Energía almacenada al final (kWh)', result.endStoredKWh]
+  ] as const : [];
+  return <div className="space-y-6 text-gray-900 dark:text-gray-100">
+    <section aria-label="Simulador de energía solar" className="rounded border border-gray-300 dark:border-gray-600 p-5 bg-white dark:bg-gray-800">
+      <h2 className="text-2xl font-semibold">Simulador Personalizado de Energía Solar</h2>
+      <p className="my-3">Estimación con un perfil horario sintético de 30 días idénticos. No utiliza datos meteorológicos ni comprueba compatibilidad eléctrica de los equipos.</p>
+      <form onSubmit={calculate} noValidate aria-label="Formulario de simulación" data-testid="simulador-form" className="space-y-6">
+        <div className="grid md:grid-cols-2 gap-4">
+          {field('consumoMensual', 'Consumo mensual (kWh)', 'Consumo total de un mes de 30 días.', 0, 5000, 'input-consumo-mensual')}
+          {field('precioElectricidad', 'Tarifa de energía (COP/kWh)', 'Tarifa evitada; los cargos fijos de la factura no se ahorran.', 0, 1000000, 'input-precio-electricidad')}
+          {field('horasSol', 'Horas solares pico por día (HSP)', 'Irradiación sobre el plano del panel dividida por 1 kW/m²; no son horas de luz.', 0.01, 12, 'input-horas-sol')}
+          {field('inversionInicial', 'Inversión inicial total (COP)', 'Incluya paneles, inversor, baterías, instalación y demás costos.', 0, 1e15, 'input-inversion-inicial')}
+          {field('cellTemperatureC', 'Temperatura de célula (°C)', 'Temperatura efectiva del módulo durante generación, no temperatura ambiente.', -50, 100)}
+          {field('otherLossesPct', 'Otras pérdidas del sistema (%)', 'Cableado, suciedad y otras pérdidas. Excluye inversor, temperatura y batería.', 0, 99)}
+          {field('daytimeLoadPct', 'Consumo durante horas diurnas (%)', 'Se distribuye uniformemente entre 06:00 y 18:00; el resto durante la noche.', 0, 100)}
+          {field('annualMaintenanceCOP', 'Mantenimiento anual (COP)', 'Se descuenta del ahorro anual para calcular recuperación simple.', 0, 1e15)}
         </div>
-      )}
-    </div>
-  );
-};
-
-export default SimuladorPersonalizado;
+        <EquipmentEditor equipment={equipment} onChange={setEquipment} />
+        {errors.equipment && <p role="alert" className="text-red-700 dark:text-red-300">{errors.equipment}</p>}
+        <div className="flex gap-4"><button className="bg-blue-700 text-white px-5 py-3 rounded" type="submit" aria-label="Calcular simulación" data-testid="btn-calcular">Calcular</button>
+          <button className="border border-gray-500 px-5 py-3 rounded" type="button" aria-label="Reiniciar formulario" data-testid="btn-reiniciar" onClick={() => { setFields(initialFields()); setEquipment(defaultEquipment()); setErrors({}); setSubmitted(null); }}>Reiniciar</button></div>
+      </form>
+    </section>
+    {submitted && result && <div ref={resultsRef} tabIndex={-1} role="region" aria-label="Resultados de la simulación" data-testid="resultado-calculo" className="rounded border border-gray-400 p-5 space-y-5">
+      <h2 className="text-xl font-semibold">Resultados de la simulación</h2>
+      {signature !== submitted.signature && <p role="status" className="font-semibold">Datos modificados: vuelva a calcular. Estos resultados corresponden a la última simulación.</p>}
+      <p>Consumo: {decimal(submitted.input.monthlyLoadKWh)} kWh/mes. Tarifa: {currency(submitted.input.tariffCOP)}/kWh. Equipos: {submitted.input.equipment.panel.model}, {submitted.input.equipment.inverter.model}{submitted.input.equipment.battery.enabled ? `, ${submitted.input.equipment.battery.model}` : ''}.</p>
+      <table className="w-full text-left"><caption className="font-semibold text-left mb-2">Balance energético mensual y equipos</caption><tbody>{rows.map(([label, value]) => <tr key={label} className="border-b border-gray-300 dark:border-gray-600"><th scope="row" className="py-2 font-normal">{label}</th><td className="py-2">{decimal(value)}</td></tr>)}</tbody></table>
+      <p>Dimensionamiento orientativo por energía: {result.requiredKWp === null ? 'No disponible con rendimiento térmico nulo.' : `${decimal(result.requiredKWp)} kWp; ${result.suggestedPanels} paneles de ${submitted.input.equipment.panel.ratedWp} Wp.`} Ignora horarios de consumo, almacenamiento y recorte del inversor; no garantiza cubrir la demanda.</p>
+      <table className="w-full text-left"><caption className="font-semibold text-left mb-2">Análisis financiero simple</caption><tbody>
+        <tr><th scope="row">Inversión inicial total</th><td>{currency(submitted.input.investmentCOP)}</td></tr>
+        <tr><th scope="row">Ahorro mensual estimado</th><td>{currency(result.annualSavingsCOP / 12)}</td></tr>
+        <tr><th scope="row">Ahorro anual estimado</th><td>{currency(result.annualSavingsCOP)}</td></tr>
+        <tr><th scope="row">Mantenimiento anual</th><td>{currency(submitted.input.annualMaintenanceCOP)}</td></tr>
+        <tr><th scope="row">Ahorro anual neto</th><td>{currency(result.annualNetSavingsCOP)}</td></tr>
+        <tr><th scope="row">Tiempo de recuperación de inversión</th><td>{result.paybackYears === null ? 'Sin recuperación con ahorro neto no positivo' : `${decimal(result.paybackYears)} años`}</td></tr>
+        <tr><th scope="row">Balance neto simple a 10 años</th><td>{currency(result.netTenYearCOP)}</td></tr>
+      </tbody></table>
+      <table className="w-full text-left"><caption className="font-semibold text-left mb-2">Sensibilidad: recuperación recalculada</caption><thead><tr><th scope="col">Escenario</th><th scope="col">Años</th></tr></thead><tbody>{[
+        ['Base', {}], ['Tarifa +20% (máximo 1.000.000 COP/kWh)', { tariffCOP: Math.min(1000000, submitted.input.tariffCOP * 1.2) }], ['Tarifa −20%', { tariffCOP: submitted.input.tariffCOP * 0.8 }], ['Inversión −20%', { investmentCOP: submitted.input.investmentCOP * 0.8 }], ['HSP +20% (máximo 12)', { peakSunHours: Math.min(12, submitted.input.peakSunHours * 1.2) }], ['HSP −20% (mínimo 0,01)', { peakSunHours: Math.max(0.01, submitted.input.peakSunHours * 0.8) }]
+      ].map(([name, patch]) => { const scenario = simulateSolar({ ...submitted.input, ...(patch as Partial<SolarInput>) }); return <tr key={name as string}><th scope="row" className="font-normal py-1">{name as string}</th><td>{scenario.paybackYears === null ? 'Sin recuperación' : decimal(scenario.paybackYears)}</td></tr>; })}</tbody></table>
+      <p className="text-sm">Se anualiza el mes × 12 (360 días sintéticos). Batería inicialmente vacía, sin carga desde red ni ingresos por excedentes. Sin estacionalidad, degradación, financiación, impuestos ni reemplazos. El área corresponde a módulos, sin pasillos. La batería se modela con acoplamiento AC equivalente y pérdidas simétricas; no es un cálculo de autonomía o de seguridad eléctrica.</p>
+    </div>}
+  </div>;
+}

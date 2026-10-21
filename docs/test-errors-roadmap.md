@@ -59,6 +59,33 @@ Verificación final del 21 de octubre de 2026 con Node 22.23.3 y npm 11.21.1:
 - Las tres secciones no desbordan horizontalmente a 390 px; no hubo errores
   JavaScript de página durante los recorridos.
 
+## Simulación y equipos: validación del 21 de octubre de 2026
+
+Después de la verificación anterior de 80 pruebas se extrajo el motor solar y
+se incorporó el editor de equipos. La verificación actual con Node 22 y npm 11:
+
+- `npm run build`: TypeScript y compilación de producción aprobados.
+- `npm test -- --run`: **90/90 pruebas aprobadas en 17/17 archivos**.
+- Pruebas numéricas: producción calculada a mano, efecto térmico, área,
+  dimensionamiento, límite del inversor, eficiencia y conservación de energía
+  de baterías, entradas inválidas y recuperación sin ahorro positivo.
+- Comprobación independiente de 1.000 configuraciones aleatorias válidas:
+  balances de carga, producción y almacenamiento; límites de capacidad y
+  resultados finitos.
+- Chromium: producción base de 247,68 kWh/mes, cambios de equipos, resultados
+  congelados y aviso de recálculo, batería que reduce compra de red,
+  características descriptivas, consumo cero, validación al vaciar/rellenar
+  especificaciones y reinicio verificados sobre la interfaz real.
+- axe-core: cero infracciones detectadas en resultados con batería en claro
+  y oscuro, y en móvil oscuro; cero errores JavaScript de página.
+- Sin desbordamiento horizontal a 390 px.
+
+Estas comprobaciones son del modelo sintético documentado en
+[Modelo de simulación](modelo-simulacion.md). No validan una predicción contra
+mediciones meteorológicas o instalaciones reales ni acreditan compatibilidad
+eléctrica de equipos. Los resultados anteriores de dependencias y de las demás
+secciones siguen siendo registros de aquella verificación, no nuevas auditorías.
+
 ## Actualización de dependencias y accesibilidad
 
 Se eliminó node-forge, que no se utilizaba, y se actualizaron las dependencias
