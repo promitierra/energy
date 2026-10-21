@@ -4,7 +4,9 @@ export interface Equipment {
   inverter: { model: string; acKW: number; efficiencyPct: number; features: Feature[] };
   battery: { enabled: boolean; model: string; count: number; nominalKWh: number; depthOfDischargePct: number; roundTripEfficiencyPct: number; chargeKW: number; dischargeKW: number; features: Feature[] };
 }
+export type ProjectType = 'on-grid' | 'off-grid';
 export interface SolarInput {
+  projectType?: ProjectType; autonomyDays?: number; peakLoadKW?: number;
   monthlyLoadKWh: number; peakSunHours: number; tariffCOP: number; investmentCOP: number;
   cellTemperatureC: number; otherLossesPct: number; daytimeLoadPct: number; annualMaintenanceCOP: number;
   equipment: Equipment;
@@ -19,6 +21,11 @@ export function validateInput(input: SolarInput): string[] {
   const range = (name: string, value: number, min: number, max = Infinity, integer = false) => {
     if (!Number.isFinite(value) || value < min || value > max || (integer && !Number.isInteger(value))) errors.push(`${name}: valor fuera de rango${integer ? ' (entero requerido)' : ''}.`);
   };
+  if (input.projectType !== undefined && !['on-grid', 'off-grid'].includes(input.projectType)) errors.push('Tipo de proyecto inválido.');
+  if (input.projectType === 'off-grid') {
+    range('Autonomía', input.autonomyDays ?? 1, 1, 7);
+    range('Carga simultánea máxima', input.peakLoadKW ?? 0, 0, 100000);
+  }
   range('Consumo mensual', input.monthlyLoadKWh, 0, 5000);
   range('Horas solares pico', input.peakSunHours, 0.01, 12);
   range('Tarifa', input.tariffCOP, 0, 1000000);
@@ -47,6 +54,7 @@ export function validateInput(input: SolarInput): string[] {
 export function simulateSolar(input: SolarInput) {
   const errors = validateInput(input);
   if (errors.length) throw new Error(errors.join(' '));
+  const offGrid = input.projectType === 'off-grid';
   const { panel, inverter, battery } = input.equipment;
   const installedKWp = panel.count * panel.ratedWp / 1000;
   const thermalFactor = Math.max(0, 1 + panel.temperatureCoefficientPct / 100 * (input.cellTemperatureC - 25));
@@ -57,6 +65,8 @@ export function simulateSolar(input: SolarInput) {
   const weights = Array.from({ length: 12 }, (_, hour) => Math.sin(Math.PI * (hour + 0.5) / 12));
   const sumWeights = weights.reduce((sum, value) => sum + value, 0);
   let productionKWh = 0, directKWh = 0, chargedKWh = 0, dischargedKWh = 0, exportedKWh = 0, gridKWh = 0, batteryLossKWh = 0, endStoredKWh = 0, clippingKWh = 0;
+  let unmetKWh = 0, curtailedKWh = 0, lastDayUnmetKWh = 0;
+  const hourly: { hour: number; solar: number; load: number; battery: number; grid: number; unmet: number }[] = [];
   for (let day = 0; day < 30; day++) {
     for (let hour = 0; hour < 24; hour++) {
       const daylight = hour >= 6 && hour < 18;
@@ -69,19 +79,26 @@ export function simulateSolar(input: SolarInput) {
       const deficit = load - direct;
       const charge = battery.enabled ? Math.min(surplus, battery.chargeKW * battery.count, Math.max(0, usableBatteryKWh - endStoredKWh) / eta) : 0;
       endStoredKWh += charge * eta;
-      const discharge = battery.enabled ? Math.min(deficit, battery.dischargeKW * battery.count, endStoredKWh * eta) : 0;
+      const discharge = battery.enabled ? Math.min(deficit, battery.dischargeKW * battery.count, endStoredKWh * eta, offGrid ? Math.max(0, inverter.acKW - direct) : Infinity) : 0;
       endStoredKWh = Math.max(0, endStoredKWh - discharge / eta);
       productionKWh += solar; directKWh += direct; chargedKWh += charge; dischargedKWh += discharge;
-      exportedKWh += surplus - charge; gridKWh += deficit - discharge;
+      const remaining = Math.max(0, deficit - discharge);
+      if (offGrid) { unmetKWh += remaining; curtailedKWh += surplus - charge; }
+      else { exportedKWh += surplus - charge; gridKWh += remaining; }
+      if (day === 29) {
+        lastDayUnmetKWh += offGrid ? remaining : 0;
+        hourly.push({ hour, solar, load, battery: discharge, grid: offGrid ? 0 : remaining, unmet: offGrid ? remaining : 0 });
+      }
       batteryLossKWh += charge * (1 - eta) + discharge * (1 / eta - 1);
       clippingKWh += availableAC - solar;
     }
   }
   const selfConsumedKWh = directKWh + dischargedKWh;
-  const annualSavingsCOP = selfConsumedKWh * 12 * input.tariffCOP;
+  const annualSavingsCOP = offGrid ? 0 : selfConsumedKWh * 12 * input.tariffCOP;
   const annualNetSavingsCOP = annualSavingsCOP - input.annualMaintenanceCOP;
   const requiredKWp = yieldFactor > 0 ? input.monthlyLoadKWh / (30 * input.peakSunHours * yieldFactor) : null;
   return {
+    unmetKWh, curtailedKWh, lastDayUnmetKWh, hourly,
     installedKWp, areaM2: installedKWp / (panel.efficiencyPct / 100), thermalFactor,
     requiredKWp, suggestedPanels: requiredKWp === null ? null : Math.ceil(requiredKWp * 1000 / panel.ratedWp),
     nominalBatteryKWh, usableBatteryKWh, productionKWh, directKWh, chargedKWh, dischargedKWh,

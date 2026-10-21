@@ -39,7 +39,7 @@ El 14% de otras pérdidas y el 96% del inversor son ejemplos basados en valores 
 
 ## Demanda, batería y balances
 
-El porcentaje de consumo diurno reparte esa parte del consumo mensual uniformemente entre las 12 horas diurnas; el resto se reparte entre las 12 nocturnas. La producción solar atiende primero esa demanda. Los excedentes cargan la batería; el sobrante se exporta sin remuneración. Los déficits se cubren primero con batería y después con red.
+El porcentaje de consumo diurno reparte esa parte del consumo mensual uniformemente entre las 12 horas diurnas; el resto se reparte entre las 12 nocturnas. La producción solar atiende primero esa demanda. Los excedentes cargan la batería; el sobrante se exporta sin remuneración. Los déficits se cubren primero con batería. En on-grid el resto procede de la red; en off-grid queda como demanda sin cubrir. Los excedentes se exportan en on-grid y se descartan en off-grid.
 
 La batería es un almacenamiento equivalente acoplado en AC. El banco empieza vacío respecto de su ventana utilizable, sin carga desde red. La energía almacenada se mantiene entre horas y días; no se reinicia cada noche.
 
@@ -56,13 +56,13 @@ energíaAlmacenada -= descargaAC / ηdescarga
 pérdidas = cargaAC × (1 − ηcarga) + descargaAC × (1/ηdescarga − 1)
 ```
 
-Las potencias de carga y descarga son **por batería**, mientras que el límite del inversor es la **potencia AC total fotovoltaica**. Este almacenamiento AC equivalente tiene sus propios límites; no representa el límite compartido de un inversor híbrido. No se simulan voltajes, corrientes, envejecimiento, autodescarga, reservas adicionales ni pérdidas en espera. La eficiencia de ciclo debe corresponder al almacenamiento AC equivalente para evitar omitir o duplicar conversiones.
+Las potencias de carga y descarga son **por batería**, mientras que el límite del inversor es la **potencia AC total fotovoltaica**. En on-grid, este almacenamiento AC equivalente tiene sus propios límites. En off-grid, además se limita la suma de suministro directo y descarga a la potencia AC del inversor; es un modelo equivalente simplificado, no una comprobación de topología o compatibilidad de un inversor híbrido. No se simulan voltajes, corrientes, envejecimiento, autodescarga, reservas adicionales ni pérdidas en espera. La eficiencia de ciclo debe corresponder al almacenamiento AC equivalente para evitar omitir o duplicar conversiones.
 
 Con batería inicialmente vacía, los tests verifican:
 
 ```
-consumo = autoconsumoSolar + compraRed
-generaciónAC = autoconsumoSolar + excedentes + pérdidasBatería + energíaFinal
+consumo = autoconsumoSolar + compraRed + demandaSinCubrir
+generaciónAC = autoconsumoSolar + exportación + excedenteDescartado + pérdidasBatería + energíaFinal
 cargaAC = descargaAC + pérdidasBatería + energíaFinal
 ```
 
@@ -78,6 +78,10 @@ panelesOrientativos = techo(kWpOrientativos × 1000 / WpPorPanel)
 El dimensionamiento orientativo no cambia automáticamente los equipos. Ignora el recorte del inversor, el horario de demanda y las pérdidas de almacenamiento: no garantiza cubrir todo el consumo. Con rendimiento nulo no se presenta sugerencia. El área excluye separación, pasillos y geometría de cubierta.
 
 ## Finanzas y sensibilidad
+
+Estas métricas de ahorro de factura se aplican a **on-grid**. En off-grid no hay
+compras de red evitadas: se muestran inversión y mantenimiento, pero no
+ahorro de factura ni recuperación sin definir una alternativa de suministro.
 
 ```
 ahorroAnualBruto = autoconsumoMensual × 12 × tarifa
@@ -114,3 +118,65 @@ Consultadas el 21 de octubre de 2026:
 - [SAM: recuperación de inversión](https://samrepo.nlr.gov/help/mtf_payback.html): recuperación de costos mediante ahorros acumulados y limitaciones ante flujos irregulares.
 
 Para extender el modelo, añada propiedades tipadas, validación, ecuaciones y pruebas de balance en el módulo solar, después exponga los campos en el editor. Añadir una fila descriptiva por sí solo no cambia la física.
+
+
+## Tipo de proyecto y mínimos sugeridos
+
+La selección **On-grid / Off-grid** forma parte de cada resultado guardado.
+Cambiarla requiere recalcular. Los gráficos muestran balance mensual, perfil
+horario del día 30, sensibilidad y, en on-grid, balance financiero acumulado.
+Las tablas se conservan como alternativa accesible.
+
+Las sugerencias en `src/modules/solar/sizing.ts` comparan el equipo configurado
+con un objetivo definido y muestran por debajo, igual o por encima. Estar por
+encima puede aportar margen y no constituye un error.
+
+- **On-grid, paneles:** objetivo de producción equivalente al consumo mensual,
+  con el cálculo energético anterior; no garantiza autoconsumo del 100%.
+- **On-grid, baterías:** mínimo obligatorio cero. Si se activa almacenamiento,
+  el objetivo opcional es cubrir la energía nocturna, con suficiente capacidad
+  utilizable y potencia. La disponibilidad de excedentes sigue condicionando
+  el resultado. Si está desactivado, se muestra esa cantidad como alternativa.
+- **Off-grid, baterías:** se introducen autonomía de 1 a 7 días y pico de carga
+  simultánea en kW. La cantidad propuesta es el máximo de los límites de
+  energía, descarga y carga indicados abajo. Se supone banco lleno al inicio
+  del evento sin sol para dimensionar autonomía, pero la simulación mensual
+  sigue comenzando vacío.
+- **Off-grid, paneles:** se busca por bisección el menor número entero de
+  paneles cuyo día 30 no tenga demanda sin cubrir, usando el banco propuesto
+  y un inversor sin recorte. Esto verifica un día sintético recurrente y no
+  garantiza suministro durante el arranque ni durante mal tiempo.
+- **Inversor:** potencia sugerida para evitar recorte con el mayor campo entre
+  el configurado y el sugerido bajo el perfil solar utilizado. En off-grid se
+  toma además el máximo con el pico simultáneo ingresado y con la carga horaria
+  sintética. El equipo debe admitir operación aislada/formadora de red; el modelo
+  no comprueba que una ficha comercial realmente lo soporte.
+
+```
+energíaAutonomíaAC = consumoMensual / 30 × díasAutonomía
+energíaÚtilACPorBatería = capacidadNominal × DoD × sqrt(eficienciaCiclo)
+Nenergía = techo(energíaObjetivoAC / energíaÚtilACPorBatería)
+Ndescarga = techo(potenciaCargaEléctricaObjetivo / potenciaDescargaPorBatería)
+Ncarga = techo(energíaNocturna / (eficienciaCiclo × 12h × potenciaCargaPorBatería))
+Nbaterías = máximo(Nenergía, Ndescarga, Ncarga)
+```
+
+En on-grid, energíaObjetivoAC es la energía nocturna y la potencia objetivo es
+su media horaria; en off-grid son la energía de autonomía y la carga simultánea.
+Las sugerencias son un conjunto: aumentar solo paneles puede dejar limitados el
+inversor o la batería. No se cambia automáticamente el equipo ni la inversión.
+La búsqueda tiene límites explícitos de 100.000 unidades y potencia del modelo;
+si no encuentra solución lo indica en lugar de presentar una cantidad ficticia.
+Una ficha de batería desactivada inválida se reemplaza solo en la sugerencia
+por la ficha de ejemplo y se informa al usuario.
+
+El pico simultáneo es una entrada de dimensionamiento, no un perfil nuevo de
+consumo. Verifique aparte potencia de arranque, tensión, Voc, rango MPPT y
+corriente. Dimensionar con HSP medias no sustituye datos horarios de largo
+plazo ni diseño para el peor periodo meteorológico.
+
+Referencias adicionales:
+
+- [Sandia: datos solares para sistemas aislados](https://www.sandia.gov/research/publications/details/the-synthesis-of-solar-radiation-data-for-sizing-stand-alone-photovoltaic-s-1990-01-01/): importancia de datos horarios de largo plazo.
+- [DOE: inversores e integración](https://www.energy.gov/cmei/systems/solar-integration-inverters-and-grid-services-basics): operación sin apoyo de red requiere inversores preparados para ello.
+- [Gobierno de Australia: baterías](https://www.energy.gov.au/solar/get-know-solar-technology/batteries): capacidad energética y potencia de salida condicionan cargas atendidas.

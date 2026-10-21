@@ -2,8 +2,9 @@ import React from 'react';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import SimuladorPersonalizado from '../components/SimuladorPersonalizado';
+import { ThemeProvider } from '../theme/ThemeProvider';
 function setup() {
-  render(<SimuladorPersonalizado />);
+  render(<ThemeProvider><SimuladorPersonalizado /></ThemeProvider>);
   for (const [id, value] of Object.entries({ 'input-consumo-mensual': '250', 'input-precio-electricidad': '454', 'input-horas-sol': '5', 'input-inversion-inicial': '9500000' })) fireEvent.change(screen.getByTestId(id), { target: { value } });
 }
 const calculate = () => fireEvent.click(screen.getByTestId('btn-calcular'));
@@ -43,4 +44,19 @@ describe('equipment simulator integration', () => {
     expect(screen.getByLabelText('Incluir almacenamiento')).not.toBeChecked();
     expect(screen.getByLabelText('Cantidad de paneles')).toHaveValue(5);
   });
+  it('restores charts and changes project type, deficits and sizing advice', () => {
+    setup(); calculate();
+    expect(screen.getByRole('region', { name: 'Gráficos de la simulación' })).toBeInTheDocument();
+    expect(screen.getByRole('figure', { name: 'Balance financiero acumulado' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Sugerencias de dimensionamiento' })).toHaveTextContent('Paneles: 6');
+    fireEvent.change(screen.getByLabelText('Tipo de proyecto'), { target: { value: 'off-grid' } });
+    calculate();
+    expect(screen.queryByTestId('input-precio-electricidad')).not.toBeInTheDocument();
+    expect(screen.queryByRole('figure', { name: 'Balance financiero acumulado' })).not.toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Sugerencias de dimensionamiento' })).toHaveTextContent('Baterías: 3');
+    const results = screen.getByTestId('resultado-calculo');
+    expect(within(results).getByRole('row', { name: /Compra de red mensual/ })).toHaveTextContent('0');
+    expect(results).toHaveTextContent('no se calculan ahorros de factura');
+  });
+
 });

@@ -355,3 +355,12 @@ Las contribuciones son bienvenidas. Por favor, abrir un issue primero para discu
 ### Simulación y características de equipos
 
 El simulador permite editar paneles, inversores, baterías y características descriptivas adicionales. Consulte el [modelo de simulación](docs/modelo-simulacion.md) para las ecuaciones, unidades, ejemplo reproducible, limitaciones y fuentes técnicas.
+
+
+### Proyectos conectados y aislados
+
+En el simulador, seleccione **On-grid** u **Off-grid**. Los gráficos se acompañan
+con tablas. Las sugerencias comparan paneles, baterías e inversor configurados
+con el mínimo del objetivo; para off-grid se solicitan autonomía y carga
+simultánea. Los faltantes aislados se reportan como demanda sin cubrir, no como
+compras de red. Consulte los [criterios y límites de dimensionamiento](docs/modelo-simulacion.md#tipo-de-proyecto-y-mínimos-sugeridos).

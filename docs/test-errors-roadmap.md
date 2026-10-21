@@ -111,3 +111,23 @@ Home/End y un único punto de entrada por Tab, cubierta por una regresión.
 - Evaluar los avisos de dimensiones de Recharts en jsdom antes de suprimirlos.
 - Mantener las cifras de esta página ligadas a ejecuciones reales, preferir
   selectores por rol/nombre accesible y aislar estado de navegación entre tests.
+
+## Correcciones de proyectos y gráficos — 21 de octubre de 2026
+
+- Se restauraron gráficos de balance mensual, perfil horario, finanzas y
+  sensibilidad, manteniendo tablas accesibles. En off-grid no se muestra una
+  recuperación basada en ahorros ficticios de factura.
+- On-grid conserva importación/exportación; off-grid reporta demanda sin cubrir
+  y excedente descartado, con límite compartido de suministro del inversor.
+- Se añadieron sugerencias de paneles, baterías e inversor, objetivos de
+  autonomía y carga simultánea, y comparación por debajo/encima del objetivo.
+- Pruebas: **97/97 en 18 archivos**, compilación de producción aprobada.
+- Verificación independiente: **200 configuraciones** con conservación de energía
+  en ambos tipos y comprobación del mínimo entero de paneles off-grid cuando
+  hay solución para el conjunto de equipos sugerido.
+- Chromium: cuatro estados (on-grid claro, off-grid claro, off-grid oscuro y
+  móvil) sin infracciones axe detectadas ni errores JavaScript. Se comprobaron
+  gráficos, sugerencias bajas/altas, déficits aislados y ausencia de desbordamiento
+  horizontal a 390 px.
+- Los mínimos se limitan al objetivo y perfil sintéticos documentados; no
+  constituyen una garantía de autonomía meteorológica ni diseño eléctrico.
